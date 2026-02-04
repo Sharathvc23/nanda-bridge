@@ -1,8 +1,8 @@
 # NANDA Bridge
 
-Build NANDA-compatible agent registries in Python. This library provides
-Pydantic models for the NANDA AgentFacts schema plus a FastAPI router with
-standard registry endpoints.
+NANDA Bridge is a minimal Python reference implementation for NANDA AgentFacts,
+registry endpoints, and Quilt-style deltas. It is designed as a simple on-ramp
+for new registries.
 
 ## Features
 
