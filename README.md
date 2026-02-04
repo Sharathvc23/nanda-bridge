@@ -219,4 +219,4 @@ MIT License. See `LICENSE`.
 ## Credits
 
 Developed by stellarminds.ai and open-sourced for Project NANDA (https://projectnanda.org).
-NANDA is a project of the MIT Media Lab.
+
