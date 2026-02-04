@@ -19,15 +19,21 @@ standard registry endpoints.
 ## Installation
 
 ```bash
-pip install nanda-bridge
+pip install nanda-bridge  # once published to PyPI
 ```
 
 From source:
 
 ```bash
-git clone https://github.com/lyraspace/nanda-bridge
+git clone https://github.com/Sharathvc23/nanda-bridge
 cd nanda-bridge
 pip install -e .
+```
+
+From GitHub:
+
+```bash
+pip install git+https://github.com/Sharathvc23/nanda-bridge.git
 ```
 
 ## Quick Start
@@ -212,5 +218,5 @@ MIT License. See `LICENSE`.
 
 ## Credits
 
-Developed by stellarminds.ai and open-sourced for Project NANDA.
+Developed by stellarminds.ai and open-sourced for Project NANDA (https://projectnanda.org).
 NANDA is a project of the MIT Media Lab.
