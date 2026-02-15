@@ -291,6 +291,15 @@ To join the NANDA network:
 3. Contact the MIT NANDA team to register as a federated peer
 4. (Optional) Implement Quilt-compatible sync or gossip mechanisms for real-time or near-real-time federation
 
+## Related Packages
+
+| Package | Question it answers |
+|---------|-------------------|
+| [`nanda-model-provenance`](https://github.com/Sharathvc23/nanda-model-provenance) | "Where did this model come from?" (identity, versioning, provider, NANDA serialization) |
+| [`nanda-model-card`](https://github.com/Sharathvc23/model-card) | "What is this model?" (unified metadata schema — type, status, risk level, metrics, weights hash) |
+| [`nanda-model-integrity-layer`](https://github.com/Sharathvc23/nanda-model-integrity-layer) | "Does this model's metadata meet policy?" (rule-based checks) |
+| [`nanda-model-governance`](https://github.com/Sharathvc23/nanda-governance) | "Has this model been cryptographically approved for deployment?" (approval flow with signatures, quorum, scoping, revocation) |
+
 ## Related Projects
 
 - [Project NANDA](https://github.com/projnanda) - ProjectNANDA.org
