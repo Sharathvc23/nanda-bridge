@@ -1,7 +1,7 @@
 """
 NANDA Bridge - A Python library for building NANDA-compatible agent registries.
 
-NANDA (Networked AI Agents in Decentralized Architecture) is MIT Media Lab's
+NANDA (Network of AI Agents in Decentralized Architecture) is MIT Media Lab's
 protocol for federated AI agent discovery and communication.
 
 This library provides:

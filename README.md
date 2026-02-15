@@ -2,7 +2,7 @@
 
 A Python library for building NANDA-compatible AI agent registries.
 
-**[NANDA](https://projectnanda.org)** (Networked AI Agents in Decentralized Architecture) is the protocol for federated AI agent discovery and communication. This library provides the primitives needed to make your agent registry interoperable with the NANDA ecosystem.
+**[NANDA](https://projectnanda.org)** (Network of AI Agents in Decentralized Architecture) is the protocol for federated AI agent discovery and communication. This library provides the primitives needed to make your agent registry interoperable with the NANDA ecosystem.
 
 ## Features
 
