@@ -14,7 +14,7 @@ A Python library for building NANDA-compatible AI agent registries.
 ## Installation
 
 ```bash
-pip install nanda-bridge
+pip install nanda-bridge - pending - use git clone
 ```
 
 Or install from source:
