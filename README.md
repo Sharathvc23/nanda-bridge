@@ -301,20 +301,13 @@ To join the NANDA network:
 | [`nanda-model-governance`](https://github.com/Sharathvc23/nanda-governance) | "Has this model been cryptographically approved for deployment?" (approval flow with signatures, quorum, scoping, revocation) |
 | `nanda-bridge` (this package) | "How do I expose this to the NANDA network?" (FastAPI router, AgentFacts models, delta sync) |
 
-## Related Projects
-
-- [Project NANDA](https://github.com/projnanda) - ProjectNANDA.org
-- [NANDA Adapter](https://github.com/projnanda/adapter) - Official NANDA SDK
-- [NANDA Quilt](https://github.com/aidecentralized/NANDA-Quilt-of-Registries-and-Verified-AgentFacts) - Federated registry specification
 
 ## License
 
 MIT License - see [LICENSE](LICENSE)
 
-## Contributing
 
-Contributions welcome! Please read our contributing guidelines and submit pull requests.
 
 ## Credits
 
-Developed by [stellarminds.ai](https://stellarminds.ai) and open-sourced for [projectnanda.org](https://projectnanda.org).
+Developed by [stellarminds.ai](https://stellarminds.ai) 
