@@ -12,12 +12,33 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from sm_bridge.trust.base import ProofResult
 
 
-class SmProvider(BaseModel):
+class SmRecord(BaseModel):
+    """Base for the AgentFacts record tree — keeps fields we do not declare.
+
+    A federated record is another registry's assertion, and this bridge re-serves
+    it (`pull_deltas` stores it, `gateway.to_catalog_entry` serves it). Pydantic's
+    default is ``extra="ignore"``, which silently dropped every field this model
+    does not declare and left us re-serving a truncated version of a peer's
+    record as though it were complete.
+
+    ``extra="allow"`` keeps them, and they round-trip through ``model_dump``. It
+    is not a licence for us to invent fields: our own converter populates only
+    declared ones, so a record we build carries no extras.
+
+    Deliberately NOT applied to the response wrappers below. Those are our own
+    output, and accepting undeclared fields there would let junk into our
+    responses without anything noticing.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+
+class SmProvider(SmRecord):
     """NANDA provider object identifying the organization running the agent.
 
     Required fields per NANDA spec: name, url
@@ -29,7 +50,7 @@ class SmProvider(BaseModel):
     did: str | None = Field(None, description="Provider's DID (e.g., did:web:example.com)")
 
 
-class SmAdaptiveResolver(BaseModel):
+class SmAdaptiveResolver(SmRecord):
     """NANDA adaptive resolver for dynamic endpoint resolution.
 
     Supports capability negotiation, load balancing, and geo-routing.
@@ -42,7 +63,7 @@ class SmAdaptiveResolver(BaseModel):
     )
 
 
-class SmEndpoints(BaseModel):
+class SmEndpoints(SmRecord):
     """NANDA endpoints object specifying how to reach the agent.
 
     Supports static endpoints, dynamic/rotating endpoints, and adaptive resolution.
@@ -55,7 +76,7 @@ class SmEndpoints(BaseModel):
     )
 
 
-class SmAuthentication(BaseModel):
+class SmAuthentication(SmRecord):
     """NANDA authentication object specifying supported auth methods.
 
     Common methods: "did-auth", "oauth2", "api-key", "jwt", "none"
@@ -69,7 +90,7 @@ class SmAuthentication(BaseModel):
     )
 
 
-class SmCapabilities(BaseModel):
+class SmCapabilities(SmRecord):
     """NANDA capabilities object describing what the agent can do.
 
     Modalities are high-level capability categories (e.g., "text", "image", "audio").
@@ -86,7 +107,7 @@ class SmCapabilities(BaseModel):
     batch: bool = Field(default=False, description="Supports batch processing")
 
 
-class SmSkill(BaseModel):
+class SmSkill(SmRecord):
     """NANDA skill object describing a specific agent capability.
 
     Skills are more granular than modalities - they describe specific
@@ -112,7 +133,7 @@ class SmSkill(BaseModel):
     maxTokens: int | None = Field(None, description="Maximum token limit")
 
 
-class SmCertification(BaseModel):
+class SmCertification(SmRecord):
     """NANDA certification block for trust verification.
 
     Levels: "self-declared", "verified", "audited"
@@ -131,7 +152,7 @@ class SmCertification(BaseModel):
     expirationDate: datetime | None = Field(None, description="When certification expires")
 
 
-class SmEvaluations(BaseModel):
+class SmEvaluations(SmRecord):
     """NANDA evaluations block for performance metrics.
 
     Contains audit trails and third-party verification records.
@@ -144,7 +165,7 @@ class SmEvaluations(BaseModel):
     auditorID: str | None = Field(None, description="Auditor identifier")
 
 
-class SmTelemetry(BaseModel):
+class SmTelemetry(SmRecord):
     """NANDA telemetry block for observability configuration.
 
     Defines monitoring and metrics collection settings.
@@ -159,7 +180,7 @@ class SmTelemetry(BaseModel):
     )
 
 
-class SmAgentFacts(BaseModel):
+class SmAgentFacts(SmRecord):
     """NANDA-compliant AgentFacts schema.
 
     This is the core data structure for agent metadata in the NANDA ecosystem.

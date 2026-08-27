@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **A federated record keeps fields this model does not declare.** `pull_deltas`
+  validates a peer's record into `SmAgentFacts` and stores it, and the gateway
+  re-serves what was stored. Pydantic's default is `extra="ignore"`, so every
+  undeclared field a peer sent was dropped silently — and we then re-served a
+  truncated version of another registry's record as though it were complete,
+  with nothing recording that anything had been lost.
+
+  The AgentFacts record tree now inherits `SmRecord`, which sets
+  `extra="allow"`. Unknown fields survive validation and round-trip through
+  `model_dump`, at both the top level and inside nested objects such as `skills`.
+
+  This is not a licence for this bridge to invent fields: our own converter
+  populates only declared ones, so a record we build carries no extras, and a
+  test pins that.
+
+  The response wrappers (`SmAgentFactsIndexResponse`, `SmAgentFactsDelta`,
+  `SmAgentFactsDeltaResponse`, `SmWellKnown`, `SmTool`, `SmToolsResponse`,
+  `SmA2AMessage`) deliberately stay strict — they are our own output, and
+  accepting undeclared fields there would let junk into our responses unnoticed.
+  A test pins that boundary too.
+
 ### Fixed — security
 
 - **An identifier naming another registry no longer resolves against this one.**
