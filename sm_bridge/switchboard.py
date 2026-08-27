@@ -67,9 +67,7 @@ class Switchboard:
         """Resolve ``agent`` under ``registry`` — delegate (entry) or host+verify (hosting)."""
         if registry in self._entry:
             return SwitchboardResult(
-                registry=registry,
-                kind="delegated",
-                delegation=self._entry[registry].delegate(agent),
+                registry=registry, kind="delegated", delegation=self._entry[registry].delegate(agent)
             )
         if registry in self._hosting:
             conv = self._hosting[registry].converter

@@ -29,9 +29,7 @@ def _spki_from_root_keys() -> bytes:
 
 def test_real_ans_tl_receipt_verifies():
     receipt = (_FIX / "real_tl_receipt.cbor").read_bytes()
-    out = asyncio.run(
-        AnsScittProfile().verify(None, {"receipt": receipt, "public_key": _spki_from_root_keys()})
-    )
+    out = asyncio.run(AnsScittProfile().verify(None, {"receipt": receipt, "public_key": _spki_from_root_keys()}))
     assert out.status is ProofStatus.VERIFIED, out.failure_reason
     assert out.method == "scitt-cose-merkle"
 
@@ -39,9 +37,5 @@ def test_real_ans_tl_receipt_verifies():
 def test_tampered_real_receipt_is_rejected():
     receipt = bytearray((_FIX / "real_tl_receipt.cbor").read_bytes())
     receipt[len(receipt) // 2] ^= 0x01  # flip one byte
-    out = asyncio.run(
-        AnsScittProfile().verify(
-            None, {"receipt": bytes(receipt), "public_key": _spki_from_root_keys()}
-        )
-    )
+    out = asyncio.run(AnsScittProfile().verify(None, {"receipt": bytes(receipt), "public_key": _spki_from_root_keys()}))
     assert out.status is not ProofStatus.VERIFIED

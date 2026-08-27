@@ -67,7 +67,6 @@ def _report(result: Any) -> int:
 
 # ----- per-profile handlers ----------------------------------------------------------
 
-
 def _verify_ans_scitt(args: argparse.Namespace) -> int:
     from sm_bridge.trust.ans_scitt import AnsScittProfile
 
@@ -86,11 +85,7 @@ def _verify_jws_catalog(args: argparse.Namespace) -> int:
 
     catalog = json.loads(Path(args.catalog).read_text())
     entries = catalog.get("entries", catalog)  # accept a bare entries array too
-    sig = (
-        Path(args.signature).read_text().strip()
-        if Path(args.signature).exists()
-        else args.signature
-    )
+    sig = Path(args.signature).read_text().strip() if Path(args.signature).exists() else args.signature
     evidence: dict[str, Any] = {"entries": entries, "signature": sig}
     if args.jwks:
         evidence["jwks"] = json.loads(Path(args.jwks).read_text())
@@ -105,16 +100,8 @@ def _verify_agent_card(args: argparse.Namespace) -> int:
     from sm_bridge.trust.ed25519_agentcard import Ed25519AgentCardProfile
 
     payload = json.loads(Path(args.card).read_text())
-    sig_b64 = (
-        Path(args.signature_b64).read_text().strip()
-        if Path(args.signature_b64).exists()
-        else args.signature_b64
-    )
-    evidence = {
-        "payload": payload,
-        "signature_b64": sig_b64,
-        "public_key": Path(args.pubkey).read_bytes(),
-    }
+    sig_b64 = Path(args.signature_b64).read_text().strip() if Path(args.signature_b64).exists() else args.signature_b64
+    evidence = {"payload": payload, "signature_b64": sig_b64, "public_key": Path(args.pubkey).read_bytes()}
     return _report(_run(Ed25519AgentCardProfile().verify(None, evidence)))
 
 
@@ -134,11 +121,8 @@ def _verify_delegation(args: argparse.Namespace) -> int:
 
 # ----- parser ------------------------------------------------------------------------
 
-
 def _build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog="sm-bridge", description="NANDA quilt onboarding + verification"
-    )
+    p = argparse.ArgumentParser(prog="sm-bridge", description="NANDA quilt onboarding + verification")
     sub = p.add_subparsers(dest="command", required=True)
 
     verify = sub.add_parser("verify", help="verify a trust artifact")
@@ -151,9 +135,7 @@ def _build_parser() -> argparse.ArgumentParser:
     a.set_defaults(func=_verify_ans_scitt)
 
     j = vsub.add_parser("jws-catalog", help="verify a signed AI-Catalog (ES256 detached JWS)")
-    j.add_argument(
-        "--catalog", required=True, help="path to the ai-catalog.json (its entries are verified)"
-    )
+    j.add_argument("--catalog", required=True, help="path to the ai-catalog.json (its entries are verified)")
     j.add_argument("--signature", required=True, help="detached compact JWS (string or path)")
     j.add_argument("--jwks", help="path to the JWKS")
     j.add_argument("--pubkey", help="path to the signing public key (PEM/DER)")
@@ -167,15 +149,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
     d = vsub.add_parser("dns-aid", help="verify a DNS-AID record (SVCB + DNSSEC + DANE)")
     d.add_argument("--fqdn", required=True, help="agent FQDN, e.g. chat.example.com")
-    d.add_argument(
-        "--dane", action="store_true", help="also perform DANE/TLSA certificate matching"
-    )
+    d.add_argument("--dane", action="store_true", help="also perform DANE/TLSA certificate matching")
     d.set_defaults(func=_verify_dns_aid)
 
     g = vsub.add_parser("delegation", help="verify a did:key delegation chain")
-    g.add_argument(
-        "--evidence", required=True, help="path to the delegation evidence bundle (JSON)"
-    )
+    g.add_argument("--evidence", required=True, help="path to the delegation evidence bundle (JSON)")
     g.set_defaults(func=_verify_delegation)
 
     return p

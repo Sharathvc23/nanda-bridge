@@ -117,7 +117,9 @@ def test_poller_sync_once_advances_cursor() -> None:
 def test_poller_thread_start_stop() -> None:
     store = DeltaStore()
     log = [_delta(1, "upsert", "navigator")]
-    poller = FederationPoller("https://peer.example", store, interval=0.01, fetch=_peer_fetch(log))
+    poller = FederationPoller(
+        "https://peer.example", store, interval=0.01, fetch=_peer_fetch(log)
+    )
     poller.start()
     try:
         deadline = time.time() + 2.0

@@ -198,9 +198,7 @@ class SmAgentFacts(BaseModel):
     # Capabilities
     capabilities: SmCapabilities = Field(..., description="Agent capabilities")
     skills: list[SmSkill] = Field(
-        ...,
-        min_length=1,
-        description="Detailed skill definitions (at least one, per spec minItems:1)",
+        ..., min_length=1, description="Detailed skill definitions (at least one, per spec minItems:1)"
     )
 
     # Trust & Verification (production NANDA fields)

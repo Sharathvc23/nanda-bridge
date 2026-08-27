@@ -22,27 +22,18 @@ class _StubProfile:
 
     async def verify(self, subject, evidence):
         if evidence.get("ok"):
-            return ProofResult.verified(
-                profile=self.profile_id, method="stub", evidence_ref="ev:resolve"
-            )
+            return ProofResult.verified(profile=self.profile_id, method="stub", evidence_ref="ev:resolve")
         return ProofResult.failed(profile=self.profile_id, method="stub", reason="no")
 
 
 def _client(with_trust: bool) -> TestClient:
     conv = _EvidenceConverter(
-        registry_id="r",
-        provider_name="P",
-        provider_url="https://p.example",
-        base_url="https://p.example",
+        registry_id="r", provider_name="P", provider_url="https://p.example", base_url="https://p.example"
     )
     conv.register(SimpleAgent(id="a1", name="A1", description="d", public=True))
     reg = TrustRegistry([_StubProfile()]) if with_trust else None
     bridge = SmBridge(
-        registry_id="r",
-        provider_name="P",
-        provider_url="https://p.example",
-        converter=conv,
-        trust_registry=reg,
+        registry_id="r", provider_name="P", provider_url="https://p.example", converter=conv, trust_registry=reg
     )
     app = FastAPI()
     app.include_router(bridge.router)

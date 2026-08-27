@@ -58,9 +58,7 @@ def test_ansentryconverter_satisfies_entrymode_protocol():
 
 def test_registry_entry_rejects_unknown_conformance_level():
     with pytest.raises(ValueError, match="conformance_level"):
-        RegistryEntry(
-            registry_name="r", resolver_endpoint="https://x", conformance_level="platinum"
-        )
+        RegistryEntry(registry_name="r", resolver_endpoint="https://x", conformance_level="platinum")
 
 
 def test_reliability_receipts_require_attester_identity():
@@ -74,8 +72,7 @@ def test_reliability_receipts_require_attester_identity():
     out = normalize_reliability_receipts(raw)
     assert len(out) == 2
     assert all(
-        (r.get("attester") or r.get("attester_id") or r.get("attester_did", "")).strip()
-        for r in out
+        (r.get("attester") or r.get("attester_id") or r.get("attester_did", "")).strip() for r in out
     )
 
 

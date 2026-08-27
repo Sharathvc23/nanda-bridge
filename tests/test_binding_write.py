@@ -36,10 +36,7 @@ class FakeAuthorizer:
 def _client(authorizer, store=None, log=None):
     app = FastAPI()
     router = create_binding_write_router(
-        authorizer=authorizer,
-        authenticator=FakeAuthenticator(),
-        store=store,
-        log=log,
+        authorizer=authorizer, authenticator=FakeAuthenticator(), store=store, log=log,
     )
     app.include_router(router)
     return TestClient(app)
@@ -111,24 +108,17 @@ def test_merkle_log_inclusion_proof_round_trips():
     client = _client(FakeAuthorizer(WriteVerdict("SATISFIED")), store, log)
     # Three distinct writes → tree big enough (>=3) for RFC 6962 proofs.
     for i in range(3):
-        r = client.post(
-            "/bindings/write", json=_body(nonce=f"n{i}", subject=f"user{i}@example.com")
-        )
+        r = client.post("/bindings/write",
+                        json=_body(nonce=f"n{i}", subject=f"user{i}@example.com"))
         assert r.status_code == 200
     size = log.size
     assert size == 3
     # Reconstruct leaf 0 and verify its inclusion against the current root.
-    entry0 = canonical_log_entry(
-        {
-            "op": "binding.update_target",
-            "subject": "user0@example.com",
-            "fields": ["agent_card_url"],
-            "store_did": "did:key:zStore",
-            "grant_id": "dat:did:key:zOwner:abcd",
-            "issued_at": "2026-07-28T12:00:00Z",
-            "nonce": "n0",
-            "version": 1,
-        }
-    )
+    entry0 = canonical_log_entry({
+        "op": "binding.update_target", "subject": "user0@example.com",
+        "fields": ["agent_card_url"], "store_did": "did:key:zStore",
+        "grant_id": "dat:did:key:zOwner:abcd", "issued_at": "2026-07-28T12:00:00Z",
+        "nonce": "n0", "version": 1,
+    })
     proof = log.inclusion_proof(0)
     assert root_from_inclusion(leaf_hash(entry0), 0, size, proof) == log.root()
