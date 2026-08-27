@@ -69,8 +69,10 @@ class SimpleAgent:
     auth_methods: list[str] = field(default_factory=lambda: ["did-auth"])
     required_scopes: list[str] | None = None
 
-    # Optional - certification (production NANDA)
-    certification_level: str = "self-declared"
+    # Optional - certification (production NANDA). None means the source made no
+    # certification claim, and none is emitted — a default here would have this
+    # bridge assert something on the source's behalf.
+    certification_level: str | None = None
     certification_issuer: str | None = None
     attestations: list[str] = field(default_factory=list)
 
@@ -290,20 +292,30 @@ class SimpleAgentConverter:
             elif isinstance(skill_data, str):
                 skills.append(SmSkill(id=skill_data, description=skill_data))
 
-        # Default skill if none specified
+        # NANDA requires minItems:1, so a source with no skills cannot be
+        # represented without one. The placeholder stays, but it is recorded in
+        # `synthesized` below so a consumer can tell it apart from a skill the
+        # source actually declared.
+        synthesized: list[str] = []
         if not skills:
+            synthesized.append("skills")
             skills.append(
                 SmSkill(
-                    id=f"urn:{self.registry_id}:agent", description=f"{self.provider_name} agent"
+                    id=f"urn:{self.registry_id}:agent",
+                    description=f"No skills declared by {self.provider_name}; placeholder for schema validity",
                 )
             )
 
-        # Build certification (production NANDA)
-        certification = SmCertification(
-            level=agent.certification_level,
-            issuer=agent.certification_issuer or self.provider_name,
-            attestations=agent.attestations,
-        )
+        # Build certification only if the source declared one. A default level
+        # would emit a trust claim the source never made, indistinguishable in
+        # the output from one it did.
+        certification = None
+        if agent.certification_level is not None:
+            certification = SmCertification(
+                level=agent.certification_level,
+                issuer=agent.certification_issuer or self.provider_name,
+                attestations=agent.attestations,
+            )
 
         # Build evaluations if any metrics provided
         evaluations = None
@@ -333,6 +345,9 @@ class SimpleAgentConverter:
                 "card_template": agent.card_template,
                 "endpoints_extended": endpoints_extended,
                 **agent.metadata,
+                # After the spread on purpose: this is the bridge's statement
+                # about its own output, and a source must not be able to hide it.
+                "synthesized": synthesized,
             }
         }
 

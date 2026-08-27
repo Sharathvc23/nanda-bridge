@@ -167,7 +167,8 @@ def test_entry_mode_all_hops_registries_then_delegate():
     c = _client()
     regs = c.get("/nanda/registries").json()
     assert [e["registry_name"] for e in regs] == ["acme-ans"]
-    assert regs[0]["conformance_level"] == "auditable"
+    # Nothing in this path verified the checkpoint, so basic is the honest level.
+    assert regs[0]["conformance_level"] == "basic"
 
     deleg = c.get("/nanda/registries/acme-ans/resolve", params={"agent": "urn:acme:42"}).json()
     assert deleg["kind"] == "delegation"

@@ -13,7 +13,7 @@ from sm_bridge.onboarding import (
 )
 
 
-def test_ans_entry_produces_single_entry_and_is_auditable_with_tl():
+def test_ans_entry_is_basic_until_the_checkpoint_is_verified():
     conv = ANSEntryConverter(
         registry_name="acme-ans",
         display_name="Acme ANS",
@@ -25,7 +25,10 @@ def test_ans_entry_produces_single_entry_and_is_auditable_with_tl():
     assert isinstance(entry, RegistryEntry)
     assert entry.registry_name == "acme-ans"
     assert entry.resolver_endpoint == "https://ans.acme.example"  # trailing slash stripped
-    assert entry.conformance_level == "auditable"  # has checkpoint + keys
+    # Presence of a checkpoint and keys is not evidence that the checkpoint
+    # verifies; establishing that needs a live check this converter does not do.
+    assert entry.conformance_level == "basic"
+    assert conv.to_entry(checkpoint_verifies=True).conformance_level == "auditable"
     assert entry.trust_profile == "ans-scitt"
 
 
