@@ -111,7 +111,9 @@ def create_sm_router(
                 agents.append(converter.to_sm(agent))
 
         # total_count must reflect all public agents, not just this page
-        total = sum(1 for a in converter.list_agents(limit=10_000, offset=0) if converter.is_public(a))
+        total = sum(
+            1 for a in converter.list_agents(limit=10_000, offset=0) if converter.is_public(a)
+        )
 
         return SmAgentFactsIndexResponse(
             generated_at=datetime.now(timezone.utc),
@@ -138,7 +140,12 @@ def create_sm_router(
         unverified source) — never a fabricated pass.
         """
         # Parse the agent identifier
-        agent_id = _parse_agent_identifier(agent, registry_id)
+        agent_id = _parse_agent_identifier(agent, registry_id, provider_url)
+        if agent_id is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Agent identifier is not scoped to this registry",
+            )
 
         # Look up the agent
         internal_agent = converter.get_agent(agent_id)
@@ -248,33 +255,63 @@ def create_sm_router(
     return router, wellknown_router
 
 
-def _parse_agent_identifier(value: str, registry_id: str) -> str:
-    """Parse various agent identifier formats to a simple ID.
+def _did_authority(provider_url: str) -> str:
+    """The host part of a provider URL, as it appears in a `did:web`."""
+    authority = provider_url.split("://", 1)[-1]
+    return authority.rstrip("/")
 
-    Handles:
-    - Simple ID: "my-agent" -> "my-agent"
-    - DID: "did:web:example.com:agents:my-agent" -> "my-agent"
-    - Handle: "@myregistry/my-agent" -> "my-agent"
-    - Namespaced: "namespace:my-agent" -> "my-agent"
+
+def _parse_agent_identifier(value: str, registry_id: str, provider_url: str) -> str | None:
+    """Reduce an identifier to a local agent id, or None if it is not ours.
+
+    This registry answers about agents it holds, and attaches its own proof block
+    to the answer. So an identifier that explicitly names a *different* registry
+    must not be reduced to a bare id and looked up here — that answers for a
+    subject we were not asked about, under our own attestation.
+
+    Returns None when the identifier names another authority, when it names one
+    we cannot recognise, or when it is empty. The caller MUST turn that into a
+    400, never a 404: a 404 is a positive claim that the agent is absent, and a
+    corroborator comparing registries would read it as this registry asserting
+    something about another registry's namespace.
+
+    Handled:
+    - `agent`                                    -> `agent`
+    - `@this-registry[:ns]/agent`                -> `agent`
+    - `@agent`                                   -> `agent`   (names no scope)
+    - `did:web:<our-host>:...:agent`             -> `agent`
+    - `@other-registry/agent`                    -> None
+    - `did:web:other.example:...:agent`          -> None
+    - `urn:...`                                  -> None      (foreign by construction)
+
+    Anything else is returned whole. A colon is NOT evidence of a namespace: the
+    previous rule split on any colon and took the last segment, which could not
+    distinguish a local id from another registry's URN or DID.
     """
-    # Handle format: @registry/agent or @registry:namespace/agent
+    if not value:
+        return None
+
+    # Handle — the registry is named explicitly, so it can be checked.
     if value.startswith("@"):
-        # @registry/agent
-        if "/" in value:
-            return value.split("/")[-1]
-        return value[1:]  # Remove @ prefix
+        body = value[1:]
+        if "/" in body:
+            scope, _, agent = body.partition("/")
+            if scope.split(":", 1)[0] != registry_id:
+                return None
+            return agent or None
+        return body or None
 
-    # DID format: did:method:...
+    # DID — the authority is part of the identifier. Only our own did:web.
     if value.startswith("did:"):
-        parts = value.split(":")
-        # Last part is typically the agent ID
-        return parts[-1]
+        local_prefix = f"did:web:{_did_authority(provider_url)}:"
+        if not value.startswith(local_prefix):
+            return None
+        return value[len(local_prefix) :].split(":")[-1] or None
 
-    # Namespaced format: namespace:agent
-    if ":" in value and not value.startswith("did:"):
-        return value.split(":")[-1]
+    # URN — names an authority we are not.
+    if value.startswith("urn:"):
+        return None
 
-    # Simple ID
     return value
 
 

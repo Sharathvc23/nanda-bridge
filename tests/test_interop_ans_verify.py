@@ -43,6 +43,7 @@ _ORIGIN = "example.ans.log"
 
 # --- RFC 6962 Merkle + COSE receipt builder (same wire layout the ANS TL emits) ----------
 
+
 def _leaf(e: bytes) -> bytes:
     return hashlib.sha256(b"\x00" + e).digest()
 
@@ -105,6 +106,7 @@ def _root_keys_line(pub) -> bytes:
 
 # --- a tiny mock ANS transparency log ----------------------------------------------------
 
+
 def _serve(root_keys: bytes, receipt: bytes):
     class H(http.server.BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -138,7 +140,9 @@ def _serve(root_keys: bytes, receipt: bytes):
 def _run_ans_verify(port: int) -> subprocess.CompletedProcess:
     return subprocess.run(
         [_ANS_VERIFY, "-url", f"http://127.0.0.1:{port}", "-agent", _AGENT_ID],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
 
 

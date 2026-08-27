@@ -58,6 +58,7 @@ def test_root_keys_line_shape():
 
 # ----- the Demo 3 auditor, including the tamper beat --------------------------------
 
+
 def test_conformance_audit_passes_clean_log():
     log = _log(6)
     sk = Ed25519PrivateKey.generate()
@@ -91,6 +92,8 @@ def test_conformance_catches_tamper():
 
 
 def test_conformance_level_computed():
-    assert conformance.conformance_level(has_live_tlog=True, checkpoint_verifies=True) == "auditable"
+    assert (
+        conformance.conformance_level(has_live_tlog=True, checkpoint_verifies=True) == "auditable"
+    )
     assert conformance.conformance_level(has_live_tlog=False, checkpoint_verifies=False) == "basic"
     assert conformance.conformance_level(has_live_tlog=True, checkpoint_verifies=False) == "basic"

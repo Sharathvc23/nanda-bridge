@@ -60,6 +60,7 @@ COSE_SIGN1_TAG = 18
 # In-test Merkle generator (RFC 6962 §2.1.3.1) — INDEPENDENT of the verifier's walk.
 # ======================================================================================
 
+
 def _leaf(entry: bytes) -> bytes:
     return hashlib.sha256(b"\x00" + entry).digest()
 
@@ -101,6 +102,7 @@ def _inclusion_path(m: int, entries: list[bytes]) -> list[bytes]:
 # ======================================================================================
 # In-test receipt builder — same field layout / core-det CBOR the real TL emits.
 # ======================================================================================
+
 
 def _build_protected(kid: bytes, iss: str = "example.ans.log", iat: int = 1_700_000_000) -> bytes:
     return cbor2.dumps(
@@ -210,6 +212,7 @@ def _profile() -> AnsScittProfile:
 # Merkle math sanity — generator and verifier must agree on a real tree.
 # ======================================================================================
 
+
 def test_generator_and_verifier_agree_on_root():
     entries = [f"e{i}".encode() for i in range(7)]
     root = _mth(entries)
@@ -254,6 +257,7 @@ def test_walk_rejects_short_path():
 # ======================================================================================
 # Happy path — real signature + real Merkle reconstruction → VERIFIED.
 # ======================================================================================
+
 
 async def test_happy_path_verified(tree: _Tree, pubkey_pem: bytes):
     res = await _profile().verify(None, {"receipt": tree.receipt(), "public_key": pubkey_pem})
@@ -300,6 +304,7 @@ async def test_verify_verifies_receipt_not_issuer_identity(tree: _Tree, pubkey_p
 # ======================================================================================
 # Red team — every failure mode.
 # ======================================================================================
+
 
 async def test_tampered_payload_fails(tree: _Tree, keypair, pubkey_pem: bytes):
     # Sign over a different payload than the one whose leaf is in the tree.
@@ -372,6 +377,7 @@ async def test_short_signature_fails(tree: _Tree, keypair, pubkey_pem: bytes):
 
 # ----- The degenerate treeSize==1 forgery (bug class i) -------------------------------
 
+
 async def test_degenerate_single_leaf_forgery_fails_signature(keypair, pubkey_pem: bytes):
     """A forged treeSize=1/leafIndex=0/empty-path/root==leafHash receipt passes an
     ISOLATED Merkle walk — so the signature is the only thing standing between it and a
@@ -384,13 +390,13 @@ async def test_degenerate_single_leaf_forgery_fails_signature(keypair, pubkey_pe
 
     attacker = ec.generate_private_key(ec.SECP256R1())
     forged = _build_receipt(
-        priv=keypair,          # kid advertises the real key...
+        priv=keypair,  # kid advertises the real key...
         payload=payload,
         tree_size=1,
         leaf_index=0,
         path=[],
-        root_hash=leaf,        # forged root == leaf hash: passes isolated walk
-        sign_key=attacker,     # ...but actually signed by the attacker
+        root_hash=leaf,  # forged root == leaf hash: passes isolated walk
+        sign_key=attacker,  # ...but actually signed by the attacker
     )
     res = await _profile().verify(None, {"receipt": forged, "public_key": pubkey_pem})
     assert res.status is ProofStatus.FAILED
@@ -413,6 +419,7 @@ async def test_degenerate_single_leaf_honestly_signed_still_verifies(keypair, pu
 # ======================================================================================
 # NOT_VERIFIED — can't even run the check (honest unknown, not a rejection).
 # ======================================================================================
+
 
 async def test_missing_receipt_not_verified(pubkey_pem: bytes):
     res = await _profile().verify(None, {"public_key": pubkey_pem})
@@ -437,7 +444,9 @@ async def test_receipt_missing_vdp_not_verified(keypair, pubkey_pem: bytes):
     payload = b"event"
     protected = _build_protected(spki_kid(keypair.public_key()))
     sig = _p1363_sign(keypair, cbor2.dumps(["Signature1", protected, b"", payload], canonical=True))
-    receipt = cbor2.dumps(cbor2.CBORTag(COSE_SIGN1_TAG, [protected, {}, payload, sig]), canonical=True)
+    receipt = cbor2.dumps(
+        cbor2.CBORTag(COSE_SIGN1_TAG, [protected, {}, payload, sig]), canonical=True
+    )
     res = await _profile().verify(None, {"receipt": receipt, "public_key": pubkey_pem})
     assert res.status is ProofStatus.NOT_VERIFIED
     assert "inclusion proof" in (res.failure_reason or "")
@@ -465,6 +474,7 @@ async def test_non_dict_evidence_not_verified():
 # ======================================================================================
 # kid helper — matches the reference SPKIKeyHash4 shape.
 # ======================================================================================
+
 
 def test_spki_kid_is_sha256_spki_first4(keypair):
     pub = keypair.public_key()

@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+### Fixed — security
+
+- **An identifier naming another registry no longer resolves against this one.**
+  `GET /nanda/resolve` reduced any identifier to a bare id and looked it up
+  locally, so `@other-registry:ns/foo` and `did:web:other.example:agents:foo`
+  both returned *this* registry's `foo`, carrying *this* registry's `proof`
+  block. The caller had no way to tell the scope was ignored. `registry_id` was
+  passed to the parser and never read.
+
+  `_parse_agent_identifier` now takes `provider_url` as well and returns `None`
+  for an identifier that names an authority we are not. A handle's registry is
+  compared against `registry_id`; a `did:web` must be under this provider's host;
+  a `urn:` names a foreign authority by construction and is refused.
+
+  **Rejection is `400`, deliberately not `404`.** A `404` is a positive claim
+  that the agent is absent. A corroborator comparing registries would read it as
+  this registry asserting something about another registry's namespace, and could
+  raise a false omission finding against it. A `400` carries no claim.
+
+  Behaviour changes, both intended:
+  - `ns:agent` is no longer split to `agent`. A colon is not evidence of a
+    namespace — the old rule could not tell a local id from another registry's
+    URN or DID, which is what made the flaw reachable.
+  - `_parse_agent_identifier` is private, but its signature and return type
+    changed (`str` to `str | None`, third argument added).
+
 - **`[feed]` extra now requires `sm-feed>=0.2.0`.** `0.1.x` is incompatible with
   partial pages: `sm-feed` split the page wire version because relaxing the head
   constraint changed its verification contract. Complete pages still declare

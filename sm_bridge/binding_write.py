@@ -45,7 +45,8 @@ INDETERMINATE = "INDETERMINATE"
 @dataclass(frozen=True)
 class WriteVerdict:
     """The result an injected :class:`WriteAuthorizer` returns."""
-    status: str            # SATISFIED | VIOLATED | INDETERMINATE
+
+    status: str  # SATISFIED | VIOLATED | INDETERMINATE
     reason: str = "ok"
     detail: str = ""
 
@@ -56,8 +57,11 @@ class WriteAuthorizer(Protocol):
     registry does not know the grant model (or the authority-evidence model)."""
 
     def authorize(
-        self, grant: dict[str, Any], request: dict[str, Any],
-        issued_at: str, store_did: str,
+        self,
+        grant: dict[str, Any],
+        request: dict[str, Any],
+        issued_at: str,
+        store_did: str,
     ) -> WriteVerdict: ...
 
 
@@ -70,15 +74,27 @@ class RequestAuthenticator(Protocol):
 
 
 def canonical_payload(
-    *, grant_id: str, op: str, subject: str, fields: dict[str, Any],
-    target_host: str | None, agent_role: str | None, issued_at: str, nonce: str,
+    *,
+    grant_id: str,
+    op: str,
+    subject: str,
+    fields: dict[str, Any],
+    target_host: str | None,
+    agent_role: str | None,
+    issued_at: str,
+    nonce: str,
 ) -> bytes:
     """Deterministic bytes the delegate signs and the registry re-derives. Both
     sides MUST compute this identically, so it is the one canonical form."""
     payload = {
-        "grant_id": grant_id, "op": op, "subject": subject, "fields": fields,
-        "target_host": target_host, "agent_role": agent_role,
-        "issued_at": issued_at, "nonce": nonce,
+        "grant_id": grant_id,
+        "op": op,
+        "subject": subject,
+        "fields": fields,
+        "target_host": target_host,
+        "agent_role": agent_role,
+        "issued_at": issued_at,
+        "nonce": nonce,
     }
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
@@ -104,11 +120,21 @@ class BindingStore:
             r = self._records.get(subject)
             return dict(r) if r is not None else None
 
-    def apply(self, *, op: str, subject: str, fields: dict[str, Any],
-              target_host: str | None, agent_role: str | None) -> dict[str, Any]:
+    def apply(
+        self,
+        *,
+        op: str,
+        subject: str,
+        fields: dict[str, Any],
+        target_host: str | None,
+        agent_role: str | None,
+    ) -> dict[str, Any]:
         with self._lock:
             rec = self._records.get(subject) or {
-                "subject": subject, "version": 0, "lifecycle_state": "active", "fields": {},
+                "subject": subject,
+                "version": 0,
+                "lifecycle_state": "active",
+                "fields": {},
             }
             rec = {**rec, "fields": {**rec["fields"], **fields}, "version": rec["version"] + 1}
             if target_host is not None:
@@ -127,6 +153,7 @@ class BindingStore:
 
 class BindingWriteRequest(BaseModel):
     """The body a delegate POSTs to write a binding."""
+
     grant: dict[str, Any]
     op: str
     subject: str
@@ -156,8 +183,8 @@ def create_binding_write_router(
     lock = threading.Lock()
 
     router = APIRouter(prefix=prefix, tags=["nanda-binding-write"])
-    router.binding_store = store   # type: ignore[attr-defined]
-    router.merkle_log = log        # type: ignore[attr-defined]
+    router.binding_store = store  # type: ignore[attr-defined]
+    router.merkle_log = log  # type: ignore[attr-defined]
 
     @router.post("/bindings/write")
     def write_binding(body: BindingWriteRequest) -> dict[str, Any]:
@@ -165,9 +192,14 @@ def create_binding_write_router(
 
         # 1. Authenticate the caller as the named delegate over the exact write.
         payload = canonical_payload(
-            grant_id=grant_id or "", op=body.op, subject=body.subject,
-            fields=body.fields, target_host=body.target_host,
-            agent_role=body.agent_role, issued_at=body.issued_at, nonce=body.nonce,
+            grant_id=grant_id or "",
+            op=body.op,
+            subject=body.subject,
+            fields=body.fields,
+            target_host=body.target_host,
+            agent_role=body.agent_role,
+            issued_at=body.issued_at,
+            nonce=body.nonce,
         )
         if not authenticator.authenticate(payload, body.store_did, body.store_signature):
             raise HTTPException(status_code=401, detail={"reason": "store_signature_invalid"})
@@ -191,22 +223,35 @@ def create_binding_write_router(
         }
         verdict = authorizer.authorize(body.grant, write_request, body.issued_at, body.store_did)
         if verdict.status == VIOLATED:
-            raise HTTPException(status_code=403,
-                                detail={"reason": verdict.reason, "detail": verdict.detail})
+            raise HTTPException(
+                status_code=403, detail={"reason": verdict.reason, "detail": verdict.detail}
+            )
         if verdict.status == INDETERMINATE:
-            raise HTTPException(status_code=409,
-                                detail={"reason": verdict.reason, "detail": verdict.detail})
+            raise HTTPException(
+                status_code=409, detail={"reason": verdict.reason, "detail": verdict.detail}
+            )
         if verdict.status != SATISFIED:
-            raise HTTPException(status_code=500,
-                                detail={"reason": "unknown_verdict", "detail": verdict.status})
+            raise HTTPException(
+                status_code=500, detail={"reason": "unknown_verdict", "detail": verdict.status}
+            )
 
         # 4. Apply, then commit to the RFC 6962 Merkle transparency log.
-        record = store.apply(op=body.op, subject=body.subject, fields=body.fields,
-                             target_host=body.target_host, agent_role=body.agent_role)
+        record = store.apply(
+            op=body.op,
+            subject=body.subject,
+            fields=body.fields,
+            target_host=body.target_host,
+            agent_role=body.agent_role,
+        )
         entry = {
-            "op": body.op, "subject": body.subject, "fields": sorted(body.fields.keys()),
-            "store_did": body.store_did, "grant_id": grant_id,
-            "issued_at": body.issued_at, "nonce": body.nonce, "version": record["version"],
+            "op": body.op,
+            "subject": body.subject,
+            "fields": sorted(body.fields.keys()),
+            "store_did": body.store_did,
+            "grant_id": grant_id,
+            "issued_at": body.issued_at,
+            "nonce": body.nonce,
+            "version": record["version"],
         }
         size = log.append(canonical_log_entry(entry))
         return {

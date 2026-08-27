@@ -179,7 +179,9 @@ class MerkleLog:
     # ----- checkpoint signing (Ed25519, [tlog] extra) -------------------------------
 
     def sign_checkpoint(self, private_key: Ed25519PrivateKey) -> Checkpoint:
-        cp = Checkpoint(origin=self.origin, size=self.size, root_b64=self.root_b64(), signature_b64="")
+        cp = Checkpoint(
+            origin=self.origin, size=self.size, root_b64=self.root_b64(), signature_b64=""
+        )
         sig = private_key.sign(cp.signed_bytes())
         cp.signature_b64 = base64.b64encode(sig).decode()
         return cp

@@ -48,7 +48,11 @@ def load_ec_p256_public(key: Any) -> EllipticCurvePublicKey:
         loaded = load_pem_public_key(key.encode("utf-8"))
     elif isinstance(key, (bytes, bytearray)):
         raw = bytes(key)
-        loaded = load_pem_public_key(raw) if raw.lstrip().startswith(b"-----BEGIN") else load_der_public_key(raw)
+        loaded = (
+            load_pem_public_key(raw)
+            if raw.lstrip().startswith(b"-----BEGIN")
+            else load_der_public_key(raw)
+        )
     else:
         raise ValueError(f"unsupported public key type: {type(key).__name__}")
 
@@ -110,7 +114,9 @@ def sign_es256(header_b64: str, payload_canonical: bytes, private_key: Any) -> s
     return b64url(r.to_bytes(32, "big") + s.to_bytes(32, "big"))
 
 
-def verify_es256(header_b64: str, payload_canonical: bytes, sig_b64url: str, public_key: Any) -> bool:
+def verify_es256(
+    header_b64: str, payload_canonical: bytes, sig_b64url: str, public_key: Any
+) -> bool:
     """Verify a P1363 ES256 signature over the detached input. False on any failure."""
     from cryptography.exceptions import InvalidSignature
     from cryptography.hazmat.primitives import hashes

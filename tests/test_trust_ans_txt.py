@@ -73,9 +73,7 @@ async def test_two_vantages_agree_verified():
     by = {"10.0.0.1:53": recs, "10.0.0.2:53": recs}
     profile = AnsTxtProfile(resolver=_vantage_resolver(by))
 
-    result = await profile.verify(
-        None, {"host": HOST, "vantages": ["10.0.0.1:53", "10.0.0.2:53"]}
-    )
+    result = await profile.verify(None, {"host": HOST, "vantages": ["10.0.0.1:53", "10.0.0.2:53"]})
     assert result.status is ProofStatus.VERIFIED
     assert result.method == "ans-txt-control"
     assert result.evidence_ref is not None
@@ -97,9 +95,7 @@ async def test_two_vantages_split_horizon_failed():
     }
     profile = AnsTxtProfile(resolver=_vantage_resolver(by))
 
-    result = await profile.verify(
-        None, {"host": HOST, "vantages": ["10.0.0.1:53", "10.0.0.2:53"]}
-    )
+    result = await profile.verify(None, {"host": HOST, "vantages": ["10.0.0.1:53", "10.0.0.2:53"]})
     assert result.status is ProofStatus.FAILED
     assert result.failure_reason is not None
     assert "split-horizon" in result.failure_reason

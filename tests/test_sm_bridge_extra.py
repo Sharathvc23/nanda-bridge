@@ -97,20 +97,16 @@ class TestParseIdentifierBoundary:
     """Boundary and edge-case tests for _parse_agent_identifier."""
 
     def test_parse_identifier_empty_string(self):
-        """Empty string input should not crash; returns empty string."""
-        result = _parse_agent_identifier("", TEST_REGISTRY_ID)
-        assert result == ""
+        """Empty string is not resolvable; None, which the caller turns into 400."""
+        assert _parse_agent_identifier("", TEST_REGISTRY_ID, TEST_PROVIDER_URL) is None
 
     def test_parse_identifier_malformed_did(self):
-        """'did:' with no further segments returns the last split part."""
-        result = _parse_agent_identifier("did:", TEST_REGISTRY_ID)
-        # "did:".split(":") == ["did", ""] → last element is ""
-        assert result == ""
+        """A DID that is not under this provider is not ours, malformed or not."""
+        assert _parse_agent_identifier("did:", TEST_REGISTRY_ID, TEST_PROVIDER_URL) is None
 
     def test_parse_identifier_handle_no_slash(self):
-        """'@registry:noslash' has no '/' so falls to strip-@ path."""
-        result = _parse_agent_identifier("@registry:noslash", TEST_REGISTRY_ID)
-        # No "/" in value → returns value[1:] == "registry:noslash"
+        """'@registry:noslash' names no agent after a '/', so the body is the id."""
+        result = _parse_agent_identifier("@registry:noslash", TEST_REGISTRY_ID, TEST_PROVIDER_URL)
         assert result == "registry:noslash"
 
 
@@ -431,13 +427,23 @@ def test_tools_and_wellknown_routes():
 
 
 def test_parse_agent_identifier_variants():
-    assert _parse_agent_identifier("@registry/agent", TEST_REGISTRY_ID) == "agent"
-    assert _parse_agent_identifier("@registry", TEST_REGISTRY_ID) == "registry"
-    assert (
-        _parse_agent_identifier("did:web:example.com:agents:ns:agent", TEST_REGISTRY_ID) == "agent"
-    )
-    assert _parse_agent_identifier("ns:agent", TEST_REGISTRY_ID) == "agent"
-    assert _parse_agent_identifier("plain-agent", TEST_REGISTRY_ID) == "plain-agent"
+    def parse(v):
+        return _parse_agent_identifier(v, TEST_REGISTRY_ID, TEST_PROVIDER_URL)
+
+    # Ours: the scope names this registry, so it is stripped.
+    assert parse(f"@{TEST_REGISTRY_ID}/agent") == "agent"
+    assert parse("did:web:test.com:agents:ns:agent") == "agent"
+
+    # No scope named: the whole thing is the id.
+    assert parse("@registry") == "registry"
+    assert parse("plain-agent") == "plain-agent"
+
+    # Foreign scope. These previously resolved against THIS registry.
+    assert parse("@registry/agent") is None
+    assert parse("did:web:example.com:agents:ns:agent") is None
+
+    # A colon is not evidence of a namespace; no longer split.
+    assert parse("ns:agent") == "ns:agent"
 
 
 def test_bridge_unregister_records_delete_and_add_tool():

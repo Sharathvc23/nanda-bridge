@@ -22,14 +22,20 @@ class _AttestationProfile:
 
     async def verify(self, subject, evidence):
         if evidence.get("attestation") == "valid":
-            return ProofResult.verified(profile=self.profile_id, method="admission", evidence_ref="att:ok")
-        return ProofResult.failed(profile=self.profile_id, method="admission", reason="attestation invalid")
+            return ProofResult.verified(
+                profile=self.profile_id, method="admission", evidence_ref="att:ok"
+            )
+        return ProofResult.failed(
+            profile=self.profile_id, method="admission", reason="attestation invalid"
+        )
 
 
 def _conv(evidence):
     return ANSEntryConverter(
-        registry_name="acme-ans", resolver_endpoint="https://ans.acme.example",
-        tl_checkpoint="acme\n9\nROOT\n", root_keys=["acme+deadbeef+KEY"],
+        registry_name="acme-ans",
+        resolver_endpoint="https://ans.acme.example",
+        tl_checkpoint="acme\n9\nROOT\n",
+        root_keys=["acme+deadbeef+KEY"],
         admission_evidence=evidence,
     )
 
@@ -63,8 +69,11 @@ async def test_require_verified_rejects_bad_attestation():
 async def test_bridge_admit_entries_stamps_all_and_serves_proof():
     conv = _conv({"attestation": "valid"})
     bridge = SmBridge(
-        registry_id="quilt", provider_name="Q", provider_url="https://q.example",
-        trust_registry=TrustRegistry([_AttestationProfile()]), entries=[conv],
+        registry_id="quilt",
+        provider_name="Q",
+        provider_url="https://q.example",
+        trust_registry=TrustRegistry([_AttestationProfile()]),
+        entries=[conv],
     )
     await bridge.admit_entries()
 
@@ -80,8 +89,11 @@ async def test_resolution_still_delegates_after_admission():
     # pointer — the index never re-verifies live records.
     conv = _conv({"attestation": "valid"})
     bridge = SmBridge(
-        registry_id="quilt", provider_name="Q", provider_url="https://q.example",
-        trust_registry=TrustRegistry([_AttestationProfile()]), entries=[conv],
+        registry_id="quilt",
+        provider_name="Q",
+        provider_url="https://q.example",
+        trust_registry=TrustRegistry([_AttestationProfile()]),
+        entries=[conv],
     )
     await bridge.admit_entries()
     app = FastAPI()
