@@ -35,7 +35,8 @@ class JwsCatalogProfile:
         signature = (evidence or {}).get("signature")  # detached compact JWS: header..sig
         if entries is None or not isinstance(signature, str):
             return ProofResult.not_verified(
-                profile=_PROFILE, method=_METHOD,
+                profile=_PROFILE,
+                method=_METHOD,
                 reason="evidence must carry 'entries' and a detached-JWS 'signature'",
             )
 
@@ -43,7 +44,8 @@ class JwsCatalogProfile:
         parts = signature.split(".")
         if len(parts) != 3 or parts[1] != "":
             return ProofResult.not_verified(
-                profile=_PROFILE, method=_METHOD,
+                profile=_PROFILE,
+                method=_METHOD,
                 reason="signature is not a detached compact JWS (header..sig)",
             )
         header_b64, _, sig_b64url = parts
@@ -51,30 +53,43 @@ class JwsCatalogProfile:
         try:
             header = json.loads(b64url_decode(header_b64))
         except Exception:  # noqa: BLE001
-            return ProofResult.not_verified(profile=_PROFILE, method=_METHOD, reason="unparseable JWS header")
+            return ProofResult.not_verified(
+                profile=_PROFILE, method=_METHOD, reason="unparseable JWS header"
+            )
         if header.get("alg") != "ES256":
             return ProofResult.not_verified(
-                profile=_PROFILE, method=_METHOD, reason=f"unsupported JWS alg {header.get('alg')!r}, want ES256"
+                profile=_PROFILE,
+                method=_METHOD,
+                reason=f"unsupported JWS alg {header.get('alg')!r}, want ES256",
             )
         if "crit" in header:
-            return ProofResult.failed(profile=_PROFILE, method=_METHOD, reason="unsupported 'crit' header parameter")
+            return ProofResult.failed(
+                profile=_PROFILE, method=_METHOD, reason="unsupported 'crit' header parameter"
+            )
 
         key = self._select_key(evidence, header.get("kid"))
         if key is None:
             return ProofResult.not_verified(
-                profile=_PROFILE, method=_METHOD, reason="no verification key (provide 'public_key' or a 'jwks')"
+                profile=_PROFILE,
+                method=_METHOD,
+                reason="no verification key (provide 'public_key' or a 'jwks')",
             )
 
         try:
             canonical = canonicalize(entries)
         except Exception as e:  # noqa: BLE001
-            return ProofResult.not_verified(profile=_PROFILE, method=_METHOD, reason=f"entries not canonicalizable: {e}")
+            return ProofResult.not_verified(
+                profile=_PROFILE, method=_METHOD, reason=f"entries not canonicalizable: {e}"
+            )
 
         if verify_es256(header_b64, canonical, sig_b64url, key):
             digest = hashlib.sha256(canonical).hexdigest()[:16]
-            return ProofResult.verified(profile=_PROFILE, method=_METHOD, evidence_ref=f"jws-catalog:{digest}")
+            return ProofResult.verified(
+                profile=_PROFILE, method=_METHOD, evidence_ref=f"jws-catalog:{digest}"
+            )
         return ProofResult.failed(
-            profile=_PROFILE, method=_METHOD,
+            profile=_PROFILE,
+            method=_METHOD,
             reason="catalog signature does not verify over the entries (tampered catalog or wrong key)",
         )
 

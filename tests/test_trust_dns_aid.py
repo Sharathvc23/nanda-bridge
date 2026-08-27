@@ -41,7 +41,9 @@ async def test_dnssec_valid_svcb_record_is_verified():
 
 @pytest.mark.asyncio
 async def test_dane_requested_and_valid_marks_evidence():
-    r = FakeVerifyResult("a.example.com", record_exists=True, svcb_valid=True, dnssec_valid=True, dane_valid=True)
+    r = FakeVerifyResult(
+        "a.example.com", record_exists=True, svcb_valid=True, dnssec_valid=True, dane_valid=True
+    )
     out = await DnsAidProfile(verifier=_verifier(r)).verify(
         None, {"fqdn": "a.example.com", "verify_dane_cert": True}
     )
@@ -60,7 +62,13 @@ async def test_no_record_is_not_verified():
 @pytest.mark.asyncio
 async def test_record_without_dnssec_is_not_verified_not_pass():
     # Present but unsigned zone → unauthenticated → NOT_VERIFIED, never VERIFIED.
-    r = FakeVerifyResult("x.example.com", record_exists=True, svcb_valid=True, dnssec_valid=False, dnssec_note="insecure")
+    r = FakeVerifyResult(
+        "x.example.com",
+        record_exists=True,
+        svcb_valid=True,
+        dnssec_valid=False,
+        dnssec_note="insecure",
+    )
     out = await DnsAidProfile(verifier=_verifier(r)).verify(None, {"fqdn": "x.example.com"})
     assert out.status is ProofStatus.NOT_VERIFIED
     assert "not DNSSEC-authenticated" in out.failure_reason
@@ -68,7 +76,13 @@ async def test_record_without_dnssec_is_not_verified_not_pass():
 
 @pytest.mark.asyncio
 async def test_dnssec_bogus_is_failed():
-    r = FakeVerifyResult("bad.example.com", record_exists=True, svcb_valid=True, dnssec_valid=False, dnssec_note="BOGUS: signature expired")
+    r = FakeVerifyResult(
+        "bad.example.com",
+        record_exists=True,
+        svcb_valid=True,
+        dnssec_valid=False,
+        dnssec_note="BOGUS: signature expired",
+    )
     out = await DnsAidProfile(verifier=_verifier(r)).verify(None, {"fqdn": "bad.example.com"})
     assert out.status is ProofStatus.FAILED
     assert "bogus" in out.failure_reason.lower()
@@ -84,7 +98,9 @@ async def test_dnssec_valid_but_svcb_invalid_is_failed():
 
 @pytest.mark.asyncio
 async def test_dane_requested_but_fails_is_failed():
-    r = FakeVerifyResult("d.example.com", record_exists=True, svcb_valid=True, dnssec_valid=True, dane_valid=False)
+    r = FakeVerifyResult(
+        "d.example.com", record_exists=True, svcb_valid=True, dnssec_valid=True, dane_valid=False
+    )
     out = await DnsAidProfile(verifier=_verifier(r)).verify(
         None, {"fqdn": "d.example.com", "verify_dane_cert": True}
     )
@@ -94,7 +110,9 @@ async def test_dane_requested_but_fails_is_failed():
 
 @pytest.mark.asyncio
 async def test_malformed_fqdn_is_not_verified():
-    out = await DnsAidProfile(verifier=_verifier(FakeVerifyResult("x"))).verify(None, {"fqdn": "not a domain"})
+    out = await DnsAidProfile(verifier=_verifier(FakeVerifyResult("x"))).verify(
+        None, {"fqdn": "not a domain"}
+    )
     assert out.status is ProofStatus.NOT_VERIFIED
     out2 = await DnsAidProfile(verifier=_verifier(FakeVerifyResult("x"))).verify(None, {})
     assert out2.status is ProofStatus.NOT_VERIFIED

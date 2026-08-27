@@ -25,7 +25,9 @@ from sm_bridge.trust.base import ProofResult
 
 profile_id = "dns-aid"
 
-_FQDN_RE = re.compile(r"^(?=.{1,253}$)([A-Za-z0-9_](?:[A-Za-z0-9_-]{0,62}[A-Za-z0-9_])?\.)+[A-Za-z]{2,63}$")
+_FQDN_RE = re.compile(
+    r"^(?=.{1,253}$)([A-Za-z0-9_](?:[A-Za-z0-9_-]{0,62}[A-Za-z0-9_])?\.)+[A-Za-z]{2,63}$"
+)
 
 
 def _default_verifier() -> Any:  # pragma: no cover - exercised only with the package installed

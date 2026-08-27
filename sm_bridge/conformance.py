@@ -42,7 +42,9 @@ class ConformanceReport:
         return all(c.ok for c in self.checks)
 
     def summary(self) -> str:
-        return "\n".join(f"[{'PASS' if c.ok else 'FAIL'}] {c.name}: {c.detail}" for c in self.checks)
+        return "\n".join(
+            f"[{'PASS' if c.ok else 'FAIL'}] {c.name}: {c.detail}" for c in self.checks
+        )
 
 
 def audit(
@@ -56,27 +58,40 @@ def audit(
 
     # 1. checkpoint signature
     sig_ok = MerkleLog.verify_checkpoint(checkpoint, public_key)
-    checks.append(CheckResult("checkpoint-signature", sig_ok,
-                              "verifies against root key" if sig_ok else "signature INVALID"))
+    checks.append(
+        CheckResult(
+            "checkpoint-signature",
+            sig_ok,
+            "verifies against root key" if sig_ok else "signature INVALID",
+        )
+    )
 
     # 2. root recomputation — the live leaves must reproduce the signed root
     live_root_b64 = log.root_b64()
     root_ok = (live_root_b64 == checkpoint.root_b64) and (log.size == checkpoint.size)
-    checks.append(CheckResult(
-        "root-recomputation", root_ok,
-        "recomputed root matches signed checkpoint" if root_ok
-        else f"DIVERGENT: live {live_root_b64[:16]}…/{log.size} vs signed {checkpoint.root_b64[:16]}…/{checkpoint.size}",
-    ))
+    checks.append(
+        CheckResult(
+            "root-recomputation",
+            root_ok,
+            "recomputed root matches signed checkpoint"
+            if root_ok
+            else f"DIVERGENT: live {live_root_b64[:16]}…/{log.size} vs signed {checkpoint.root_b64[:16]}…/{checkpoint.size}",
+        )
+    )
 
     # 3. append-only vs a pinned earlier checkpoint
     if pinned is not None:
         recomputed = base64.b64encode(_merkle_root(log._leaves[: pinned.size])).decode()  # noqa: SLF001
         grew_ok = (pinned.size <= log.size) and (recomputed == pinned.root_b64)
-        checks.append(CheckResult(
-            "append-only", grew_ok,
-            "old tree is a prefix of the new (history only grew)" if grew_ok
-            else "APPEND-ONLY VIOLATION: prior tree is not a prefix of the current log",
-        ))
+        checks.append(
+            CheckResult(
+                "append-only",
+                grew_ok,
+                "old tree is a prefix of the new (history only grew)"
+                if grew_ok
+                else "APPEND-ONLY VIOLATION: prior tree is not a prefix of the current log",
+            )
+        )
 
     return ConformanceReport(checks)
 

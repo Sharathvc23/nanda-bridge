@@ -26,6 +26,7 @@ def _facts(**over):
 
 # ----- honesty rule ------------------------------------------------------------------
 
+
 def test_verified_requires_evidence_ref():
     with pytest.raises(ValueError, match="honesty"):
         ProofResult(profile="p", method="m", status=ProofStatus.VERIFIED, evidence_ref=None)
@@ -34,7 +35,9 @@ def test_verified_requires_evidence_ref():
 
 
 def test_verified_constructor_ok_with_evidence():
-    r = ProofResult.verified(profile="ed25519-agentcard", method="ed25519-jcs", evidence_ref="sig:abcd")
+    r = ProofResult.verified(
+        profile="ed25519-agentcard", method="ed25519-jcs", evidence_ref="sig:abcd"
+    )
     assert r.status is ProofStatus.VERIFIED
     assert r.evidence_ref == "sig:abcd"
 
@@ -44,14 +47,23 @@ def test_failed_and_not_verified_require_reason():
         ProofResult(profile="p", method="m", status=ProofStatus.FAILED)
     with pytest.raises(ValueError, match="failure_reason"):
         ProofResult(profile="p", method="m", status=ProofStatus.NOT_VERIFIED)
-    assert ProofResult.failed(profile="p", method="m", reason="forged sig").failure_reason == "forged sig"
-    assert ProofResult.not_verified(profile="p", method="m", reason="no dns").status is ProofStatus.NOT_VERIFIED
+    assert (
+        ProofResult.failed(profile="p", method="m", reason="forged sig").failure_reason
+        == "forged sig"
+    )
+    assert (
+        ProofResult.not_verified(profile="p", method="m", reason="no dns").status
+        is ProofStatus.NOT_VERIFIED
+    )
 
 
 # ----- schema round-trip -------------------------------------------------------------
 
+
 def test_proofresult_roundtrips_through_agentfacts():
-    proof = ProofResult.verified(profile="ans-scitt", method="scitt-cose-merkle", evidence_ref="receipt:xyz")
+    proof = ProofResult.verified(
+        profile="ans-scitt", method="scitt-cose-merkle", evidence_ref="receipt:xyz"
+    )
     facts = _facts(proof=proof)
     dumped = facts.model_dump()
     reloaded = SmAgentFacts.model_validate(dumped)
@@ -61,6 +73,7 @@ def test_proofresult_roundtrips_through_agentfacts():
 
 
 # ----- legacy downgrade --------------------------------------------------------------
+
 
 def test_legacy_opaque_dict_downgrades_to_not_verified():
     # A pre-v0.4 opaque proof (the old _build_proof shape) must NOT be trusted.
@@ -75,6 +88,7 @@ def test_none_proof_stays_none():
 
 
 # ----- registry dispatch -------------------------------------------------------------
+
 
 class _StubProfile:
     profile_id = "stub"

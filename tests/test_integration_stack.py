@@ -46,33 +46,49 @@ class SignedCatalogConverter(SimpleAgentConverter):
         pub = _SIGNING_KEY.public_key().public_bytes_raw()
         return (
             "ed25519-agentcard",
-            {"payload": payload, "signature_b64": base64.b64encode(sig).decode(), "public_key": pub},
+            {
+                "payload": payload,
+                "signature_b64": base64.b64encode(sig).decode(),
+                "public_key": pub,
+            },
         )
 
 
 def _bridge() -> SmBridge:
     conv = SignedCatalogConverter(
-        registry_id="catalog", provider_name="Catalog Co", provider_url="https://cat.example",
+        registry_id="catalog",
+        provider_name="Catalog Co",
+        provider_url="https://cat.example",
         base_url="https://cat.example",
     )
-    conv.register(SimpleAgent(id="finance", name="Finance Agent", description="does finance", public=True))
-    registry = TrustRegistry([
-        Ed25519AgentCardProfile(),
-        AnsScittProfile(),
-        AnsTxtProfile(),
-        DnsAidProfile(),
-        NandaDelegationProfile(),
-    ])
+    conv.register(
+        SimpleAgent(id="finance", name="Finance Agent", description="does finance", public=True)
+    )
+    registry = TrustRegistry(
+        [
+            Ed25519AgentCardProfile(),
+            AnsScittProfile(),
+            AnsTxtProfile(),
+            DnsAidProfile(),
+            NandaDelegationProfile(),
+        ]
+    )
     entries = [
         ANSEntryConverter(
-            registry_name="acme-ans", display_name="Acme ANS",
+            registry_name="acme-ans",
+            display_name="Acme ANS",
             resolver_endpoint="https://ans.acme.example",
-            tl_checkpoint="acme\n9\nROOT\n", root_keys=["acme+deadbeef+KEY"],
+            tl_checkpoint="acme\n9\nROOT\n",
+            root_keys=["acme+deadbeef+KEY"],
         )
     ]
     return SmBridge(
-        registry_id="catalog", provider_name="Catalog Co", provider_url="https://cat.example",
-        converter=conv, trust_registry=registry, entries=entries,
+        registry_id="catalog",
+        provider_name="Catalog Co",
+        provider_url="https://cat.example",
+        converter=conv,
+        trust_registry=registry,
+        entries=entries,
     )
 
 
@@ -95,20 +111,30 @@ class TamperedCatalogConverter(SimpleAgentConverter):
         forged = _SIGNING_KEY.sign(canonicalize({"not": "the real card"}))
         return (
             "ed25519-agentcard",
-            {"payload": payload, "signature_b64": base64.b64encode(forged).decode(),
-             "public_key": _SIGNING_KEY.public_key().public_bytes_raw()},
+            {
+                "payload": payload,
+                "signature_b64": base64.b64encode(forged).decode(),
+                "public_key": _SIGNING_KEY.public_key().public_bytes_raw(),
+            },
         )
 
 
 def _adversarial_client() -> TestClient:
     conv = TamperedCatalogConverter(
-        registry_id="catalog", provider_name="Catalog Co", provider_url="https://cat.example",
+        registry_id="catalog",
+        provider_name="Catalog Co",
+        provider_url="https://cat.example",
         base_url="https://cat.example",
     )
-    conv.register(SimpleAgent(id="finance", name="Finance Agent", description="does finance", public=True))
+    conv.register(
+        SimpleAgent(id="finance", name="Finance Agent", description="does finance", public=True)
+    )
     bridge = SmBridge(
-        registry_id="catalog", provider_name="Catalog Co", provider_url="https://cat.example",
-        converter=conv, trust_registry=TrustRegistry([Ed25519AgentCardProfile()]),
+        registry_id="catalog",
+        provider_name="Catalog Co",
+        provider_url="https://cat.example",
+        converter=conv,
+        trust_registry=TrustRegistry([Ed25519AgentCardProfile()]),
     )
     app = FastAPI()
     app.include_router(bridge.router)
@@ -118,6 +144,7 @@ def _adversarial_client() -> TestClient:
 # ------------------------------------------------------------------------------------
 # Hosting-mode: index -> resolve -> a genuinely VERIFIED ed25519 proof block
 # ------------------------------------------------------------------------------------
+
 
 def test_hosting_all_hops_index_then_resolve_verified():
     c = _client()
@@ -151,7 +178,9 @@ def test_ai_catalog_surface_is_spec_shaped():
 
     b = _bridge()
     app = FastAPI()
-    app.include_router(create_gateway_router(b.delta_store, base_url="https://cat.example", domain="cat.example"))
+    app.include_router(
+        create_gateway_router(b.delta_store, base_url="https://cat.example", domain="cat.example")
+    )
     # seed the gateway's view from the delta log
     b.register_agent(SimpleAgent(id="research", name="Research", description="r", public=True))
     doc = TestClient(app).get("/.well-known/ai-catalog.json").json()
@@ -162,6 +191,7 @@ def test_ai_catalog_surface_is_spec_shaped():
 # ------------------------------------------------------------------------------------
 # Entry-mode: the quilt stays pointer-only — resolve delegates, never mirrors
 # ------------------------------------------------------------------------------------
+
 
 def test_entry_mode_all_hops_registries_then_delegate():
     c = _client()
@@ -180,19 +210,27 @@ def test_entry_mode_all_hops_registries_then_delegate():
 # Every profile reachable through the one registry, each honest
 # ------------------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_registry_dispatches_all_profiles_honestly():
     reg = _bridge().trust_registry
     assert set(reg.profile_ids()) == {
-        "ed25519-agentcard", "ans-scitt", "ans-txt", "dns-aid", "nanda-delegation",
+        "ed25519-agentcard",
+        "ans-scitt",
+        "ans-txt",
+        "dns-aid",
+        "nanda-delegation",
     }
 
     # ed25519: a real signed card verifies
     key = Ed25519PrivateKey.generate()
     payload = {"id": "x", "b": 2, "a": 1}
     sig = key.sign(canonicalize(payload))
-    ev = {"payload": payload, "signature_b64": base64.b64encode(sig).decode(),
-          "public_key": key.public_key().public_bytes_raw()}
+    ev = {
+        "payload": payload,
+        "signature_b64": base64.b64encode(sig).decode(),
+        "public_key": key.public_key().public_bytes_raw(),
+    }
     assert (await reg.verify("ed25519-agentcard", None, ev)).status.value == "VERIFIED"
 
     # dns-aid: no fqdn -> honest NOT_VERIFIED (never a fabricated pass)

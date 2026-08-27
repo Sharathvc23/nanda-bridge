@@ -95,8 +95,13 @@ def test_scope_subset():
 async def test_honest_single_hop_verified():
     key = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send", "mail.read"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send", "mail.read"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     res = await _verify(
         {
@@ -117,12 +122,22 @@ async def test_honest_two_hop_verified():
     k_root = ec.generate_private_key(ec.SECP256R1())
     k_child = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send", "mail.read"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send", "mail.read"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     child = _cred(
-        "d-child", "did:key:zBob", ["mail.send"],
-        issued=NOW - 50, expires=NOW + 500, max_depth=1, parent="d-root",
+        "d-child",
+        "did:key:zBob",
+        ["mail.send"],
+        issued=NOW - 50,
+        expires=NOW + 500,
+        max_depth=1,
+        parent="d-root",
     )
     res = await _verify(
         {
@@ -146,8 +161,13 @@ async def test_honest_two_hop_verified():
 async def test_scope_escalation_beyond_provider_failed():
     key = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["admin.write"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["admin.write"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     res = await _verify(
         {
@@ -169,12 +189,22 @@ async def test_sibling_scope_escalation_child_failed():
     k_root = ec.generate_private_key(ec.SECP256R1())
     k_child = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["a.b"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["a.b"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     child = _cred(
-        "d-child", "did:key:zBob", ["a.bc"],
-        issued=NOW - 50, expires=NOW + 500, max_depth=1, parent="d-root",
+        "d-child",
+        "did:key:zBob",
+        ["a.bc"],
+        issued=NOW - 50,
+        expires=NOW + 500,
+        max_depth=1,
+        parent="d-root",
     )
     res = await _verify(
         {
@@ -201,12 +231,22 @@ async def test_depth_exceeded_failed():
     k_root = ec.generate_private_key(ec.SECP256R1())
     k_child = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=0, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=0,
+        parent=None,
     )
     child = _cred(
-        "d-child", "did:key:zBob", ["mail.send"],
-        issued=NOW - 50, expires=NOW + 500, max_depth=0, parent="d-root",
+        "d-child",
+        "did:key:zBob",
+        ["mail.send"],
+        issued=NOW - 50,
+        expires=NOW + 500,
+        max_depth=0,
+        parent="d-root",
     )
     res = await _verify(
         {
@@ -230,8 +270,13 @@ async def test_depth_exceeded_failed():
 async def test_expired_window_failed():
     key = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 1000, expires=NOW - 500, max_depth=2, parent=None,  # already expired
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 1000,
+        expires=NOW - 500,
+        max_depth=2,
+        parent=None,  # already expired
     )
     res = await _verify(
         {
@@ -252,12 +297,22 @@ async def test_window_not_nested_failed():
     k_root = ec.generate_private_key(ec.SECP256R1())
     k_child = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 200, max_depth=1, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 200,
+        max_depth=1,
+        parent=None,
     )
     child = _cred(
-        "d-child", "did:key:zBob", ["mail.send"],
-        issued=NOW - 50, expires=NOW + 1000, max_depth=0, parent="d-root",  # expires after parent
+        "d-child",
+        "did:key:zBob",
+        ["mail.send"],
+        issued=NOW - 50,
+        expires=NOW + 1000,
+        max_depth=0,
+        parent="d-root",  # expires after parent
     )
     res = await _verify(
         {
@@ -282,12 +337,22 @@ async def test_revoked_ancestor_breaks_chain_failed():
     k_root = ec.generate_private_key(ec.SECP256R1())
     k_child = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     child = _cred(
-        "d-child", "did:key:zBob", ["mail.send"],
-        issued=NOW - 50, expires=NOW + 500, max_depth=1, parent="d-root",
+        "d-child",
+        "did:key:zBob",
+        ["mail.send"],
+        issued=NOW - 50,
+        expires=NOW + 500,
+        max_depth=1,
+        parent="d-root",
     )
     res = await _verify(
         {
@@ -313,8 +378,13 @@ async def test_revoked_ancestor_breaks_chain_failed():
 async def test_stale_status_token_failed():
     key = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     res = await _verify(
         {
@@ -333,8 +403,13 @@ async def test_stale_status_token_failed():
 async def test_missing_status_token_failed():
     key = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     res = await _verify(
         {
@@ -358,8 +433,13 @@ async def test_missing_status_token_failed():
 async def test_forged_signature_failed():
     key = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     sig = _sign(root, key)  # sign the honest credential
     tampered = copy.deepcopy(root)
@@ -382,8 +462,13 @@ async def test_signature_by_wrong_key_failed():
     signer = ec.generate_private_key(ec.SECP256R1())
     attacker = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     # Signature made by `signer`, but the advertised pubkey is the attacker's.
     entry = {"sig_b64": sign_credential(root, signer), "signer_pubkey": signer_pubkey_pem(attacker)}
@@ -422,8 +507,13 @@ async def test_empty_chain_not_verified():
 async def test_unsigned_hop_not_verified():
     # A hop with no signature material cannot be checked → honest unknown, not FAILED.
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     res = await _verify(
         {
@@ -442,8 +532,13 @@ async def test_unsigned_hop_not_verified():
 async def test_missing_provider_scopes_not_verified():
     key = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     res = await _verify(
         {
@@ -468,12 +563,22 @@ async def test_broken_linkage_failed():
     k_root = ec.generate_private_key(ec.SECP256R1())
     k_child = ec.generate_private_key(ec.SECP256R1())
     root = _cred(
-        "d-root", "did:key:zAlice", ["mail.send"],
-        issued=NOW - 100, expires=NOW + 1000, max_depth=2, parent=None,
+        "d-root",
+        "did:key:zAlice",
+        ["mail.send"],
+        issued=NOW - 100,
+        expires=NOW + 1000,
+        max_depth=2,
+        parent=None,
     )
     child = _cred(
-        "d-child", "did:key:zBob", ["mail.send"],
-        issued=NOW - 50, expires=NOW + 500, max_depth=1, parent="d-WRONG",  # bad pointer
+        "d-child",
+        "did:key:zBob",
+        ["mail.send"],
+        issued=NOW - 50,
+        expires=NOW + 500,
+        max_depth=1,
+        parent="d-WRONG",  # bad pointer
     )
     res = await _verify(
         {

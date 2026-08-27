@@ -26,9 +26,9 @@ from sm_bridge.trust import ProofStatus
 from sm_bridge.trust.delegation import NandaDelegationProfile, sign_credential, signer_pubkey_pem
 
 NOW = 1_800_000_000  # fixed evaluation instant, for a deterministic demo
-PROVIDER_KEY = ec.generate_private_key(ec.SECP256R1())          # the domain-holding provider
-SUBJECT_DID = "did:key:zAliceDomainlessP256"                    # an identity with no domain
-PROVIDER_SCOPES = ["mail"]                                      # what the provider actually holds
+PROVIDER_KEY = ec.generate_private_key(ec.SECP256R1())  # the domain-holding provider
+SUBJECT_DID = "did:key:zAliceDomainlessP256"  # an identity with no domain
+PROVIDER_SCOPES = ["mail"]  # what the provider actually holds
 
 
 def _rfc3339(ts: int) -> str:
@@ -39,7 +39,11 @@ def _credential(delegation_id: str, scopes: list[str], *, issued: int, expires: 
     return {
         "delegationId": delegation_id,
         "schemaVersion": "DELEGATION-V1",
-        "issuer": {"ansName": "provider.example", "agentId": "agent-provider", "did": "did:key:zProvider"},
+        "issuer": {
+            "ansName": "provider.example",
+            "agentId": "agent-provider",
+            "did": "did:key:zProvider",
+        },
         "subject": {"did": SUBJECT_DID},
         "scopes": scopes,
         "issuedAt": _rfc3339(issued),
@@ -49,13 +53,17 @@ def _credential(delegation_id: str, scopes: list[str], *, issued: int, expires: 
     }
 
 
-def _evidence(cred: dict, *, status: str = "ACTIVE", token_exp: int = NOW + 3600, now: int = NOW) -> dict:
+def _evidence(
+    cred: dict, *, status: str = "ACTIVE", token_exp: int = NOW + 3600, now: int = NOW
+) -> dict:
     return {
         "chain": [cred],
-        "signatures": {cred["delegationId"]: {
-            "sig_b64": sign_credential(cred, PROVIDER_KEY),
-            "signer_pubkey": signer_pubkey_pem(PROVIDER_KEY),
-        }},
+        "signatures": {
+            cred["delegationId"]: {
+                "sig_b64": sign_credential(cred, PROVIDER_KEY),
+                "signer_pubkey": signer_pubkey_pem(PROVIDER_KEY),
+            }
+        },
         "status_tokens": {cred["delegationId"]: {"status": status, "exp": token_exp}},
         "provider_scopes": PROVIDER_SCOPES,
         "now": now,
@@ -102,8 +110,11 @@ async def main() -> bool:
         and r4.status is ProofStatus.FAILED
     )
     _rule("Result")
-    print(" ✓ a domainless identity earned ANS-grade, scoped, revocable trust — and escalation,"
-          if ok else " ✗ demo did not reach the expected state")
+    print(
+        " ✓ a domainless identity earned ANS-grade, scoped, revocable trust — and escalation,"
+        if ok
+        else " ✗ demo did not reach the expected state"
+    )
     print("   expiry, and revocation were each rejected with a verbatim reason.")
     return ok
 

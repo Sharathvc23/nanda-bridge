@@ -58,7 +58,9 @@ class RegistryEntry(BaseModel):
     root_keys: list[str] = Field(
         default_factory=list, description="TL verification-line(s) / root keys for offline audit"
     )
-    last_audited: datetime | None = Field(None, description="When the auditor last verified this entry")
+    last_audited: datetime | None = Field(
+        None, description="When the auditor last verified this entry"
+    )
     conformance_level: str = Field(
         "basic",
         description="Computed, not asserted: 'basic' (schema-valid) / 'auditable' (tlog live) "
@@ -67,7 +69,9 @@ class RegistryEntry(BaseModel):
     trust_profile: str | None = Field(
         None, description="profile_id used to verify agents resolved under this registry"
     )
-    metadata: dict[str, Any] = Field(default_factory=dict, description="discovery/fanout/tags/ra/tl…")
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="discovery/fanout/tags/ra/tl…"
+    )
     proof: ProofResult | None = Field(None, description="Normalized proof over the entry itself")
 
     @field_validator("conformance_level")

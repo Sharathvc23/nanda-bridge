@@ -61,7 +61,9 @@ class ProofResult(BaseModel):
         ..., description="Concrete verification method, e.g. 'ed25519-jcs', 'scitt-cose-merkle'"
     )
     status: ProofStatus = Field(..., description="VERIFIED / FAILED / NOT_VERIFIED")
-    verified_at: datetime = Field(default_factory=_utcnow, description="When this result was produced (UTC)")
+    verified_at: datetime = Field(
+        default_factory=_utcnow, description="When this result was produced (UTC)"
+    )
     evidence_ref: str | None = Field(
         None,
         description="Reference to the artifact actually checked (receipt id, signature "
@@ -74,16 +76,16 @@ class ProofResult(BaseModel):
     @model_validator(mode="after")
     def _enforce_honesty(self) -> ProofResult:
         # The load-bearing invariant: no VERIFIED without a concrete evidence reference.
-        if self.status is ProofStatus.VERIFIED and not (self.evidence_ref and self.evidence_ref.strip()):
+        if self.status is ProofStatus.VERIFIED and not (
+            self.evidence_ref and self.evidence_ref.strip()
+        ):
             raise ValueError(
                 "cryptographic honesty violation: ProofResult.status=VERIFIED requires a "
                 "non-empty evidence_ref (the artifact that was actually checked)"
             )
         if self.status is not ProofStatus.VERIFIED and self.failure_reason is None:
             # FAILED / NOT_VERIFIED must say why — silence is not allowed.
-            raise ValueError(
-                f"ProofResult.status={self.status.value} requires a failure_reason"
-            )
+            raise ValueError(f"ProofResult.status={self.status.value} requires a failure_reason")
         return self
 
     # ----- blessed constructors -----------------------------------------------------
@@ -99,7 +101,9 @@ class ProofResult(BaseModel):
         )
 
     @classmethod
-    def failed(cls, *, profile: str, method: str, reason: str, evidence_ref: str | None = None) -> ProofResult:
+    def failed(
+        cls, *, profile: str, method: str, reason: str, evidence_ref: str | None = None
+    ) -> ProofResult:
         """A real check ran and the subject was rejected. `reason` is the verbatim cause."""
         return cls(
             profile=profile,

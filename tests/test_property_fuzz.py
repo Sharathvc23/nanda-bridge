@@ -30,6 +30,7 @@ def _run(coro):
 
 # ============================ Merkle proof — properties =================================
 
+
 def _leaf(e: bytes) -> bytes:
     return hashlib.sha256(b"\x00" + e).digest()
 
@@ -77,9 +78,7 @@ def test_tampered_leaf_never_reconstructs_root(n, tamper):
 
 # ============================ canonicalize — properties ================================
 
-_json_scalars = st.one_of(
-    st.none(), st.booleans(), st.integers(-1000, 1000), st.text(max_size=12)
-)
+_json_scalars = st.one_of(st.none(), st.booleans(), st.integers(-1000, 1000), st.text(max_size=12))
 _json_objs = st.dictionaries(st.text(min_size=1, max_size=8), _json_scalars, max_size=6)
 
 
@@ -99,6 +98,7 @@ def test_canonicalize_is_deterministic_and_utf8(obj):
 
 # ============================ scope containment — properties ============================
 
+
 @given(
     prefix=st.lists(st.sampled_from(["a", "b", "c"]), min_size=1, max_size=4),
     extra=st.lists(st.sampled_from(["x", "y"]), min_size=1, max_size=3),
@@ -108,12 +108,13 @@ def test_child_scope_under_parent_is_covered_sibling_is_not(prefix, extra):
 
     parent = ".".join(prefix)
     child = parent + "." + ".".join(extra)
-    assert scope_covers(parent, child)          # a.b covers a.b.x
-    assert scope_covers(parent, parent)         # reflexive
+    assert scope_covers(parent, child)  # a.b covers a.b.x
+    assert scope_covers(parent, parent)  # reflexive
     assert not scope_covers(parent + "z", child)  # label-boundary: a.bz does NOT cover a.b.x
 
 
 # ============================ COSE fuzz — never crash, never spurious pass ==============
+
 
 @settings(max_examples=200, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(blob=st.binary(min_size=0, max_size=300))
@@ -139,12 +140,15 @@ def test_ans_scitt_deeply_nested_cbor_bomb_degrades_safely(depth):
 
 # ============================ DoS guards ===============================================
 
+
 def test_ans_scitt_oversized_receipt_rejected():
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-    pem = ec.generate_private_key(ec.SECP256R1()).public_key().public_bytes(
-        Encoding.PEM, PublicFormat.SubjectPublicKeyInfo
+    pem = (
+        ec.generate_private_key(ec.SECP256R1())
+        .public_key()
+        .public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
     )
     huge = b"\x00" * (256 * 1024 + 1)
     out = _run(AnsScittProfile().verify(None, {"receipt": huge, "public_key": pem}))
@@ -161,8 +165,10 @@ def test_ans_scitt_overlong_merkle_path_rejected():
 
 def test_delegation_overlong_chain_rejected():
     chain = [{"delegationId": f"d{i}"} for i in range(65)]
-    out = _run(NandaDelegationProfile().verify(
-        None, {"chain": chain, "signatures": {}, "provider_scopes": ["a"]}
-    ))
+    out = _run(
+        NandaDelegationProfile().verify(
+            None, {"chain": chain, "signatures": {}, "provider_scopes": ["a"]}
+        )
+    )
     assert out.status is ProofStatus.FAILED
     assert "exceeds cap" in out.failure_reason

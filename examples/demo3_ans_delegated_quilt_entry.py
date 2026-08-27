@@ -55,18 +55,26 @@ async def main() -> bool:
     print(f" entry.display_name     : {entry.display_name}")
     print(f" entry.resolver_endpoint: {entry.resolver_endpoint}")
     print(f" entry.trust_profile    : {entry.trust_profile}")
-    print(f" entry.conformance_level: {entry.conformance_level}  (no tl_checkpoint/root_keys supplied)")
+    print(
+        f" entry.conformance_level: {entry.conformance_level}  (no tl_checkpoint/root_keys supplied)"
+    )
 
     _rule("Admission — no evidence supplied, so it joins honestly unattested")
     proof = await ans_entry.admit(trust_registry)
-    print(f" proof.status: {proof.status.value}  (never a mocked pass — NOT_VERIFIED, stated plainly)")
+    print(
+        f" proof.status: {proof.status.value}  (never a mocked pass — NOT_VERIFIED, stated plainly)"
+    )
     print(f" reason      : {proof.failure_reason}")
 
     _rule("Resolve an ANS-registered agent  →  DELEGATED, not mirrored")
     result = await sb.resolve("acme-ans", "urn:ai:domain:acme.example:agent:concierge")
     print(f" kind      : {result.kind}")
-    print(f" pointer   : {result.delegation.resolver_endpoint}  (follow this to ANS; the quilt read nothing)")
-    print(f" agent     : {result.agent}  (facts field — None: the quilt never fetched or stored a record)")
+    print(
+        f" pointer   : {result.delegation.resolver_endpoint}  (follow this to ANS; the quilt read nothing)"
+    )
+    print(
+        f" agent     : {result.agent}  (facts field — None: the quilt never fetched or stored a record)"
+    )
     print(f" note      : {result.delegation.note}")
 
     ok = (
@@ -76,8 +84,11 @@ async def main() -> bool:
         and result.delegation.resolver_endpoint == "https://ans.acme.example"
     )
     _rule("Result")
-    print(" ✓ ANS joined as exactly one quilt entry; resolution delegates back to it, unmirrored."
-          if ok else " ✗ demo did not reach the expected state")
+    print(
+        " ✓ ANS joined as exactly one quilt entry; resolution delegates back to it, unmirrored."
+        if ok
+        else " ✗ demo did not reach the expected state"
+    )
     return ok
 
 

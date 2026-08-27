@@ -156,9 +156,7 @@ def test_canonical_form_matches_signing_ts_fixture():
     # Computed BY HAND from signing.ts rules:
     #   top keys sorted -> a, arr, b, nested, u
     #   nested keys sorted -> y, z ; arrays keep order ; é left raw (UTF-8) ; no whitespace
-    expected = (
-        '{"a":"x","arr":["b","a"],"b":1,"nested":{"y":[3,2,1],"z":true},"u":"héllo"}'
-    )
+    expected = '{"a":"x","arr":["b","a"],"b":1,"nested":{"y":[3,2,1],"z":true},"u":"héllo"}'
     assert canonicalize(fixture) == expected.encode("utf-8")
 
 
@@ -193,9 +191,7 @@ def test_canonical_rejects_non_finite_numbers():
 
 async def test_missing_signature_is_not_verified():
     _, pem, _ = _keypair()
-    result = await Ed25519AgentCardProfile().verify(
-        None, {"payload": _card(), "public_key": pem}
-    )
+    result = await Ed25519AgentCardProfile().verify(None, {"payload": _card(), "public_key": pem})
     assert result.status is ProofStatus.NOT_VERIFIED
     assert "signature" in (result.failure_reason or "").lower()
 

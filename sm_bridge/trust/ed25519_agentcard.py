@@ -130,16 +130,12 @@ def _load_ed25519_public_key(public_key: Any) -> Ed25519PublicKey:
         elif len(raw) == 32:
             return Ed25519PublicKey.from_public_bytes(raw)
         else:
-            raise ValueError(
-                f"raw ed25519 public key must be 32 bytes, got {len(raw)}"
-            )
+            raise ValueError(f"raw ed25519 public key must be 32 bytes, got {len(raw)}")
     else:
         raise TypeError(f"unsupported public_key type {type(public_key).__name__}")
 
     if not isinstance(key, Ed25519PublicKey):
-        raise ValueError(
-            f"expected an ed25519 public key, got {type(key).__name__}"
-        )
+        raise ValueError(f"expected an ed25519 public key, got {type(key).__name__}")
     return key
 
 
