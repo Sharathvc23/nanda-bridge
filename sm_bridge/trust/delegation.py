@@ -69,11 +69,7 @@ def _ser(v: Any) -> str:
         return "[" + ",".join(_ser(x) for x in v) + "]"
     if isinstance(v, dict):
         items = sorted(v.items(), key=lambda kv: str(kv[0]).encode("utf-16-be"))
-        return (
-            "{"
-            + ",".join(json.dumps(str(k), ensure_ascii=False) + ":" + _ser(val) for k, val in items)
-            + "}"
-        )
+        return "{" + ",".join(json.dumps(str(k), ensure_ascii=False) + ":" + _ser(val) for k, val in items) + "}"
     raise TypeError(f"JCS: unsupported type {type(v).__name__}")
 
 
@@ -228,7 +224,9 @@ def _validate_chain(
             raise _ChainError(f"stale status token: {did} status {status!r} is not ACTIVE")
         exp = tok.get("exp")
         if exp is None or float(exp) < now_ts:
-            raise _ChainError(f"stale status token: {did} exp {exp} < now {int(now_ts)}")
+            raise _ChainError(
+                f"stale status token: {did} exp {exp} < now {int(now_ts)}"
+            )
 
         # Rule 4b — inside its own window at `now`.
         issued, expires = _window(cred)
@@ -251,7 +249,9 @@ def _validate_chain(
             # Rule 1 — issuance coverage: root scopes ⊆ provider scopes.
             ok, uncovered = scope_subset(cred["scopes"], provider_scopes)
             if not ok:
-                raise _ChainError(f"scope escalation: {uncovered!r} not covered by provider scopes")
+                raise _ChainError(
+                    f"scope escalation: {uncovered!r} not covered by provider scopes"
+                )
             continue
 
         parent = chain[i - 1]
@@ -347,11 +347,7 @@ class NandaDelegationProfile:
                 )
             did = cred["delegationId"]
             sig_entry = signatures.get(did)
-            if (
-                not isinstance(sig_entry, dict)
-                or "sig_b64" not in sig_entry
-                or "signer_pubkey" not in sig_entry
-            ):
+            if not isinstance(sig_entry, dict) or "sig_b64" not in sig_entry or "signer_pubkey" not in sig_entry:
                 # Cannot run crypto on this hop → honest unknown, not a rejection.
                 return ProofResult.not_verified(
                     profile=self.profile_id,

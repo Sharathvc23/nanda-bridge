@@ -208,7 +208,10 @@ class AnsTxtProfile:
                 return ProofResult.not_verified(
                     profile=self.profile_id,
                     method=method,
-                    reason=(f"DNS records absent: no _ans.{host} TXT with v=ans1 @ {label}"),
+                    reason=(
+                        f"DNS records absent: no _ans.{host} TXT with v=ans1 "
+                        f"@ {label}"
+                    ),
                 )
             url = ans_kv.get("url")
             if not url:
@@ -233,7 +236,8 @@ class AnsTxtProfile:
                     profile=self.profile_id,
                     method=method,
                     reason=(
-                        f"missing or malformed _ans-badge.{host} TXT (need v=ans-badge1) @ {label}"
+                        f"missing or malformed _ans-badge.{host} TXT "
+                        f"(need v=ans-badge1) @ {label}"
                     ),
                 )
             badge_url = badge_kv.get("url")
@@ -285,7 +289,8 @@ class AnsTxtProfile:
                     profile=self.profile_id,
                     method=method,
                     reason=(
-                        f"advertised _ans url does not match expected {expected_url!r}: {detail}"
+                        f"advertised _ans url does not match expected "
+                        f"{expected_url!r}: {detail}"
                     ),
                 )
 

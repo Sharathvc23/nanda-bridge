@@ -77,7 +77,6 @@ _MAX_PROOF_PATH = 64
 # so a generator bug can't hide behind a shared round-trip.
 # --------------------------------------------------------------------------------------
 
-
 def rfc9162_leaf_hash(entry: bytes) -> bytes:
     """RFC 6962 §2.1 / RFC 9162 leaf hash: SHA-256(0x00 || entry)."""
     return hashlib.sha256(b"\x00" + entry).digest()
@@ -107,9 +106,7 @@ def rfc9162_root_from_proof(
     if leaf_index < 0:
         raise ValueError(f"leaf index {leaf_index} is negative")
     if len(path) > _MAX_PROOF_PATH:
-        raise ValueError(
-            f"inclusion path length {len(path)} exceeds cap {_MAX_PROOF_PATH} (DoS guard)"
-        )
+        raise ValueError(f"inclusion path length {len(path)} exceeds cap {_MAX_PROOF_PATH} (DoS guard)")
 
     fn = leaf_index
     sn = tree_size - 1
@@ -136,7 +133,6 @@ def rfc9162_root_from_proof(
 # --------------------------------------------------------------------------------------
 # COSE_Sign1 parsing — faithful to the ANS SCITT receipt field layout.
 # --------------------------------------------------------------------------------------
-
 
 class _ReceiptParseError(Exception):
     """Receipt bytes are missing/unparseable/structurally not a COSE_Sign1 receipt."""
@@ -214,9 +210,7 @@ def _parse_cose_sign1(data: Any) -> _ParsedReceipt:
 class _ProofFields:
     __slots__ = ("tree_size", "leaf_index", "path", "root_hash")
 
-    def __init__(
-        self, tree_size: int, leaf_index: int, path: list[bytes], root_hash: bytes
-    ) -> None:
+    def __init__(self, tree_size: int, leaf_index: int, path: list[bytes], root_hash: bytes) -> None:
         self.tree_size = tree_size
         self.leaf_index = leaf_index
         self.path = path
@@ -265,7 +259,6 @@ def _extract_inclusion_proof(unprotected: Mapping[Any, Any]) -> _ProofFields:
 # --------------------------------------------------------------------------------------
 # Signature verification — ES256 over the COSE Sig_structure.
 # --------------------------------------------------------------------------------------
-
 
 def _load_public_key(pub: Any) -> Any:
     """Load a PEM or DER ECDSA P-256 public key. Returns the cryptography key object.
@@ -328,9 +321,7 @@ def _sig_structure_bytes(protected_bytes: bytes, payload: bytes) -> bytes:
     return cbor2.dumps(["Signature1", protected_bytes, b"", payload], canonical=True)
 
 
-def _verify_es256(
-    public_key: Any, protected_bytes: bytes, payload: bytes, signature: bytes
-) -> bool:
+def _verify_es256(public_key: Any, protected_bytes: bytes, payload: bytes, signature: bytes) -> bool:
     """Verify the ES256 signature over the Sig_structure. Returns True iff valid.
 
     The 64-byte IEEE P1363 raw ``r||s`` signature is converted to DER via
@@ -360,7 +351,6 @@ def _verify_es256(
 # The trust profile.
 # --------------------------------------------------------------------------------------
 
-
 class AnsScittProfile:
     """Verifier for ANS SCITT COSE_Sign1 transparency-log receipts.
 
@@ -387,7 +377,9 @@ class AnsScittProfile:
 
     profile_id = _PROFILE_ID
 
-    async def verify(self, subject: SmAgentFacts | Any, evidence: dict[str, Any]) -> ProofResult:
+    async def verify(
+        self, subject: SmAgentFacts | Any, evidence: dict[str, Any]
+    ) -> ProofResult:
         del subject  # not used: this profile verifies the receipt, not agent-card fields
 
         if not isinstance(evidence, dict):

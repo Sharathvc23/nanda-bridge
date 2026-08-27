@@ -69,18 +69,11 @@ def build_switchboard() -> Switchboard:
 
     # Registry 2 — a non-ANS AI catalog with no registry of its own → hosted.
     catalog = SignedCatalogConverter(
-        registry_id="acme-catalog",
-        provider_name="Acme",
-        provider_url="https://acme.example",
-        base_url="https://acme.example",
+        registry_id="acme-catalog", provider_name="Acme",
+        provider_url="https://acme.example", base_url="https://acme.example",
     )
     catalog.register(
-        SimpleAgent(
-            id="finance",
-            name="Finance Agent",
-            description="Handles invoices and payments",
-            public=True,
-        )
+        SimpleAgent(id="finance", name="Finance Agent", description="Handles invoices and payments", public=True)
     )
     sb.add_hosting("acme-catalog", catalog)
     return sb
@@ -92,42 +85,29 @@ async def main() -> bool:
     _rule("The switchboard — one entry per registry (never one per agent)")
     print(" registries on the switchboard:", sb.registry_names())
     for entry in sb.registries():
-        print(
-            f"   • {entry.registry_name}: pointer → {entry.resolver_endpoint} "
-            f"(entry-mode; agents resolve on the source's side)"
-        )
+        print(f"   • {entry.registry_name}: pointer → {entry.resolver_endpoint} "
+              f"(entry-mode; agents resolve on the source's side)")
 
     _rule("Query 1 — an ANS-registered agent  →  DELEGATED")
     ans = await sb.resolve("godaddy-ans", "urn:ai:godaddy:agent-42")
     print(f" kind      : {ans.kind}")
-    print(
-        f" pointer   : {ans.delegation.resolver_endpoint}  (follow this to ANS; the switchboard read nothing)"
-    )
+    print(f" pointer   : {ans.delegation.resolver_endpoint}  (follow this to ANS; the switchboard read nothing)")
     print(f" mirrored? : {ans.agent is None} → the switchboard never lists ANS's agents")
 
     _rule("Query 2 — a non-ANS catalog agent  →  HOSTED + VERIFIED")
     cat = await sb.resolve("acme-catalog", "finance")
     print(f" kind      : {cat.kind}")
     print(f" agent     : {cat.agent.agent_name} — {cat.agent.description}")
-    print(
-        f" proof     : {cat.proof.status.value} via {cat.proof.profile}  (evidence: {cat.proof.evidence_ref})"
-    )
+    print(f" proof     : {cat.proof.status.value} via {cat.proof.profile}  (evidence: {cat.proof.evidence_ref})")
 
     ok = (
-        ans.kind == "delegated"
-        and ans.agent is None
-        and cat.kind == "hosted"
-        and cat.proof.status.value == "VERIFIED"
+        ans.kind == "delegated" and ans.agent is None
+        and cat.kind == "hosted" and cat.proof.status.value == "VERIFIED"
     )
     _rule("Result")
-    print(
-        " ✓ one query surfaced two heterogeneous registries through one switchboard:"
-        if ok
-        else " ✗ demo did not reach the expected state"
-    )
-    print(
-        "   ANS delegated (pointer-only), the non-ANS catalog resolved locally with a verified proof."
-    )
+    print(" ✓ one query surfaced two heterogeneous registries through one switchboard:"
+          if ok else " ✗ demo did not reach the expected state")
+    print("   ANS delegated (pointer-only), the non-ANS catalog resolved locally with a verified proof.")
     return ok
 
 

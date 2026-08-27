@@ -27,34 +27,20 @@ class _SignedCatalog(SimpleAgentConverter):
         payload = facts.model_dump(mode="json", exclude_none=True)
         payload.pop("proof", None)
         sig = _KEY.sign(canonicalize(payload))
-        return (
-            "ed25519-agentcard",
-            {
-                "payload": payload,
-                "signature_b64": base64.b64encode(sig).decode(),
-                "public_key": _KEY.public_key().public_bytes_raw(),
-            },
-        )
+        return ("ed25519-agentcard",
+                {"payload": payload, "signature_b64": base64.b64encode(sig).decode(),
+                 "public_key": _KEY.public_key().public_bytes_raw()})
 
 
 def _switchboard() -> Switchboard:
     sb = Switchboard(trust_registry=TrustRegistry([Ed25519AgentCardProfile()]))
     # registry 1: GoDaddy ANS — one entry, resolves ~140k agents on its own side
-    sb.add_registry(
-        ANSEntryConverter(
-            registry_name="godaddy-ans", resolver_endpoint="https://ans.godaddy.example"
-        )
-    )
+    sb.add_registry(ANSEntryConverter(registry_name="godaddy-ans",
+                                      resolver_endpoint="https://ans.godaddy.example"))
     # registry 2: a non-ANS catalog the bridge hosts
-    cat = _SignedCatalog(
-        registry_id="acme-catalog",
-        provider_name="Acme",
-        provider_url="https://acme.example",
-        base_url="https://acme.example",
-    )
-    cat.register(
-        SimpleAgent(id="finance", name="Finance Agent", description="does finance", public=True)
-    )
+    cat = _SignedCatalog(registry_id="acme-catalog", provider_name="Acme",
+                         provider_url="https://acme.example", base_url="https://acme.example")
+    cat.register(SimpleAgent(id="finance", name="Finance Agent", description="does finance", public=True))
     sb.add_hosting("acme-catalog", cat)
     return sb
 

@@ -58,10 +58,8 @@ def test_peer_verified_claim_is_downgraded_by_default():
 def test_trust_peer_proof_optin_keeps_claim():
     store = DeltaStore()
     pull_deltas(
-        "https://peer.example",
-        store,
-        fetch=_fetch([_delta_with_proof(_FORGED_VERIFIED)]),
-        trust_peer_proof=True,
+        "https://peer.example", store,
+        fetch=_fetch([_delta_with_proof(_FORGED_VERIFIED)]), trust_peer_proof=True,
     )
     # explicit operator opt-in to trust this peer → claim retained
     assert store.get(1).agent.proof.status is ProofStatus.VERIFIED
@@ -71,17 +69,12 @@ def test_local_reverify_wins():
     store = DeltaStore()
 
     def reverify(agent, delta):
-        return ProofResult.failed(
-            profile="ed25519-agentcard",
-            method="ed25519-jcs",
-            reason="local re-verification rejected the forged signature",
-        )
+        return ProofResult.failed(profile="ed25519-agentcard", method="ed25519-jcs",
+                                  reason="local re-verification rejected the forged signature")
 
     pull_deltas(
-        "https://peer.example",
-        store,
-        fetch=_fetch([_delta_with_proof(_FORGED_VERIFIED)]),
-        reverify=reverify,
+        "https://peer.example", store,
+        fetch=_fetch([_delta_with_proof(_FORGED_VERIFIED)]), reverify=reverify,
     )
     proof = store.get(1).agent.proof
     assert proof.status is ProofStatus.FAILED
@@ -91,9 +84,6 @@ def test_local_reverify_wins():
 def test_legacy_peer_dict_also_downgraded():
     # a peer sending a pre-v0.4 opaque proof dict is likewise not trusted
     store = DeltaStore()
-    pull_deltas(
-        "https://peer.example",
-        store,
-        fetch=_fetch([_delta_with_proof({"method": "sha256", "digest": "x"})]),
-    )
+    pull_deltas("https://peer.example", store,
+                fetch=_fetch([_delta_with_proof({"method": "sha256", "digest": "x"})]))
     assert store.get(1).agent.proof.status is ProofStatus.NOT_VERIFIED

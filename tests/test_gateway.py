@@ -32,9 +32,7 @@ def _facts(slug: str = "planner") -> SmAgentFacts:
         provider=SmProvider(name="Example", url="https://example.com"),
         endpoints=SmEndpoints(static=[RUNTIME]),
         capabilities=SmCapabilities(
-            modalities=["text"],
-            skills=["plan"],
-            authentication=SmAuthentication(methods=["ed25519"]),
+            modalities=["text"], skills=["plan"], authentication=SmAuthentication(methods=["ed25519"])
         ),
         skills=[SmSkill(id="plan", description="Plan something")],
     )

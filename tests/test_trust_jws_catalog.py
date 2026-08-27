@@ -15,11 +15,7 @@ from sm_bridge.trust.ed25519_agentcard import canonicalize
 from sm_bridge.trust.jws_catalog import JwsCatalogProfile
 
 _ENTRIES = [
-    {
-        "identifier": "urn:example:finance",
-        "url": "https://acme.com/agents/finance.json",
-        "tags": ["finance"],
-    },
+    {"identifier": "urn:example:finance", "url": "https://acme.com/agents/finance.json", "tags": ["finance"]},
     {"identifier": "urn:example:research", "url": "https://acme.com/agents/research.json"},
 ]
 
@@ -42,9 +38,7 @@ def _pem(priv):
 async def test_valid_signed_catalog_verifies():
     priv = ec.generate_private_key(ec.SECP256R1())
     sig = _sign_catalog(_ENTRIES, priv)
-    out = await JwsCatalogProfile().verify(
-        None, {"entries": _ENTRIES, "signature": sig, "public_key": _pem(priv)}
-    )
+    out = await JwsCatalogProfile().verify(None, {"entries": _ENTRIES, "signature": sig, "public_key": _pem(priv)})
     assert out.status is ProofStatus.VERIFIED
     assert out.evidence_ref.startswith("jws-catalog:")
 
@@ -55,9 +49,7 @@ async def test_catalog_hijack_tampered_entry_fails():
     priv = ec.generate_private_key(ec.SECP256R1())
     sig = _sign_catalog(_ENTRIES, priv)
     hijacked = [dict(_ENTRIES[0], url="https://evil.example/finance.json"), _ENTRIES[1]]
-    out = await JwsCatalogProfile().verify(
-        None, {"entries": hijacked, "signature": sig, "public_key": _pem(priv)}
-    )
+    out = await JwsCatalogProfile().verify(None, {"entries": hijacked, "signature": sig, "public_key": _pem(priv)})
     assert out.status is ProofStatus.FAILED
     assert "tampered" in out.failure_reason
 
@@ -66,9 +58,7 @@ async def test_catalog_hijack_tampered_entry_fails():
 async def test_wrong_key_fails():
     priv, other = ec.generate_private_key(ec.SECP256R1()), ec.generate_private_key(ec.SECP256R1())
     sig = _sign_catalog(_ENTRIES, priv)
-    out = await JwsCatalogProfile().verify(
-        None, {"entries": _ENTRIES, "signature": sig, "public_key": _pem(other)}
-    )
+    out = await JwsCatalogProfile().verify(None, {"entries": _ENTRIES, "signature": sig, "public_key": _pem(other)})
     assert out.status is ProofStatus.FAILED
 
 
@@ -76,17 +66,10 @@ async def test_wrong_key_fails():
 async def test_jwks_key_selection_by_kid():
     priv = ec.generate_private_key(ec.SECP256R1())
     nums = priv.public_key().public_numbers()
-    jwk = {
-        "kty": "EC",
-        "crv": "P-256",
-        "kid": "k1",
-        "x": _b64url(nums.x.to_bytes(32, "big")),
-        "y": _b64url(nums.y.to_bytes(32, "big")),
-    }
+    jwk = {"kty": "EC", "crv": "P-256", "kid": "k1",
+           "x": _b64url(nums.x.to_bytes(32, "big")), "y": _b64url(nums.y.to_bytes(32, "big"))}
     sig = _sign_catalog(_ENTRIES, priv, kid="k1")
-    out = await JwsCatalogProfile().verify(
-        None, {"entries": _ENTRIES, "signature": sig, "jwks": {"keys": [jwk]}}
-    )
+    out = await JwsCatalogProfile().verify(None, {"entries": _ENTRIES, "signature": sig, "jwks": {"keys": [jwk]}})
     assert out.status is ProofStatus.VERIFIED
 
 
@@ -94,12 +77,8 @@ async def test_jwks_key_selection_by_kid():
 async def test_missing_pieces_are_not_verified():
     p = JwsCatalogProfile()
     assert (await p.verify(None, {})).status is ProofStatus.NOT_VERIFIED
-    assert (
-        await p.verify(None, {"entries": _ENTRIES, "signature": "not-a-jws"})
-    ).status is ProofStatus.NOT_VERIFIED
+    assert (await p.verify(None, {"entries": _ENTRIES, "signature": "not-a-jws"})).status is ProofStatus.NOT_VERIFIED
     # no key supplied
     priv = ec.generate_private_key(ec.SECP256R1())
     sig = _sign_catalog(_ENTRIES, priv)
-    assert (
-        await p.verify(None, {"entries": _ENTRIES, "signature": sig})
-    ).status is ProofStatus.NOT_VERIFIED
+    assert (await p.verify(None, {"entries": _ENTRIES, "signature": sig})).status is ProofStatus.NOT_VERIFIED
