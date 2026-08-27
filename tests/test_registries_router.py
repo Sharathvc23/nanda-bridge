@@ -37,7 +37,8 @@ def test_registries_list():
 
 def test_registry_get_conformance_level():
     body = _client().get("/nanda/registries/acme-ans").json()
-    assert body["conformance_level"] == "auditable"  # has checkpoint + keys
+    # The router does not verify checkpoints, so it cannot claim auditable.
+    assert body["conformance_level"] == "basic"
     assert body["trust_profile"] == "ans-scitt"
     assert _client().get("/nanda/registries/bare").json()["conformance_level"] == "basic"
 

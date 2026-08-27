@@ -2,6 +2,39 @@
 
 ## [Unreleased]
 
+### Fixed — claims the source never made
+
+- **No certification block unless the source declared one.** `SimpleAgent.certification_level`
+  defaulted to `"self-declared"`, so every converted agent carried a certification
+  block naming this provider as issuer — including agents that never certified
+  anything. The default is now `None` and no block is emitted without one.
+
+  **Breaking** for anyone relying on the old default. The old behaviour asserted a
+  trust claim on the source's behalf, indistinguishable in the output from one it
+  actually made.
+
+- **A placeholder skill is marked as synthesized.** NANDA requires `minItems: 1`,
+  so a source with no skills cannot be represented without one. The placeholder
+  stays — removing it would make the record schema-invalid — but the extension
+  block now carries `"synthesized": ["skills"]` so a consumer can tell it from a
+  skill the source declared, and the placeholder's description says what it is.
+
+  The marker is written *after* the source's own `metadata` is merged, so a source
+  cannot supply its own `synthesized` key to hide the fact.
+
+- **`conformance_level` is computed, not asserted.** `ANSEntryConverter.to_entry`
+  set `auditable` whenever a checkpoint and root keys were both non-empty strings.
+  The field's own docstring says "Computed, not asserted", and
+  `conformance.conformance_level` — the real predicate — was never called.
+
+  `to_entry` now calls it. Presence of a checkpoint is not evidence that the
+  checkpoint *verifies*; that needs a live check this converter does not perform.
+  So the default is `basic`, and a caller that has actually verified passes
+  `to_entry(checkpoint_verifies=True)`.
+
+  **Breaking:** entries that previously reported `auditable` on presence alone now
+  report `basic` until something verifies them.
+
 ### Fixed
 
 - **A federated record keeps fields this model does not declare.** `pull_deltas`

@@ -29,6 +29,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field, field_validator
 
+from sm_bridge.conformance import conformance_level
 from sm_bridge.trust.base import ProofResult, ProofStatus, TrustRegistry
 
 
@@ -158,7 +159,15 @@ class ANSEntryConverter:
         self._admission_evidence = admission_evidence
         self._proof: ProofResult | None = None
 
-    def to_entry(self) -> RegistryEntry:
+    def to_entry(self, *, checkpoint_verifies: bool = False) -> RegistryEntry:
+        """Build the entry.
+
+        ``conformance_level`` is computed by :func:`conformance.conformance_level`,
+        not asserted. Presence of a checkpoint and root keys is not evidence that
+        the checkpoint verifies — establishing that needs a live check, which this
+        converter does not perform. So the default is ``basic``, and a caller that
+        has actually verified says so with ``checkpoint_verifies``.
+        """
         return RegistryEntry(
             registry_name=self._registry_name,
             display_name=self._display_name,
@@ -166,7 +175,10 @@ class ANSEntryConverter:
             media_type=self._media_type,
             tl_checkpoint=self._tl_checkpoint,
             root_keys=self._root_keys,
-            conformance_level="auditable" if self._tl_checkpoint and self._root_keys else "basic",
+            conformance_level=conformance_level(
+                has_live_tlog=bool(self._tl_checkpoint and self._root_keys),
+                checkpoint_verifies=checkpoint_verifies,
+            ),
             trust_profile=self._trust_profile,
             metadata=self._metadata,
             proof=self._proof,
