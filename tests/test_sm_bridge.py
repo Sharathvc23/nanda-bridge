@@ -101,18 +101,24 @@ class TestDeltaStoreBoundary:
 
         assert len(store) == max_deltas
 
-    def test_delta_store_pruning_at_max_plus_one(self):
-        """Adding one more than max_deltas prunes the oldest."""
-        max_deltas = 3
-        store = DeltaStore(max_deltas=max_deltas)
+    def test_the_log_keeps_every_delta(self):
+        """The log is append-only; nothing an agent does is dropped.
+
+        This previously asserted the opposite. Pruning dropped the OLDEST deltas
+        while the catalog was rebuilt by replaying from zero, so an agent whose
+        only upsert had aged out vanished with no error.
+        """
+        import pytest as _pytest
+
+        with _pytest.warns(DeprecationWarning):
+            store = DeltaStore(max_deltas=3)
         facts = _make_facts()
 
-        for _ in range(max_deltas + 1):
+        for _ in range(4):
             store.add("upsert", facts)
 
-        assert len(store) == max_deltas
-        # The first delta (seq=1) should have been pruned
-        assert store.get(1) is None
+        assert len(store) == 4
+        assert store.get(1) is not None
 
 
 # =====================================================================

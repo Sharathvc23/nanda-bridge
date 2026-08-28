@@ -343,16 +343,20 @@ def test_converter_ext_metadata_dynamic_and_proof():
     assert "legacy-unverified" in (facts.proof.failure_reason or "")
 
 
-def test_delta_store_pruning_get_and_clear():
-    store = DeltaStore(max_deltas=2)
-    facts = _make_agent_facts("prune-me")
+def test_delta_store_retains_everything_get_and_clear():
+    # Previously asserted that the oldest delta was pruned. The log is
+    # append-only now: an agent's history is evidence, and a registry that
+    # forgets what it served cannot be audited for what it served.
+    with pytest.warns(DeprecationWarning):
+        store = DeltaStore(max_deltas=2)
+    facts = _make_agent_facts("keep-me")
 
     first = store.add("upsert", facts)
     store.add("upsert", facts)
     third = store.add("upsert", facts)
 
-    assert len(store) == 2
-    assert store.get(first.seq) is None
+    assert len(store) == 3
+    assert store.get(first.seq).seq == first.seq
     assert store.get(third.seq).seq == third.seq
     assert store.current_seq == third.seq
     assert store.next_seq == third.seq + 1
