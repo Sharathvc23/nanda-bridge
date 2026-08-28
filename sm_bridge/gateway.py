@@ -113,18 +113,40 @@ def to_catalog_entry(facts: SmAgentFacts, slug: str, base_url: str) -> CatalogEn
         tags=list(facts.capabilities.skills),
         version=facts.version,
         updatedAt=datetime.now(timezone.utc).isoformat(),
-        metadata={"ttl_seconds": 3600, "status": "active"},
+        # No ttl_seconds and no status. A hardcoded one-hour TTL is a caching
+        # contract nothing here honors — nothing invalidates at 3600s and the
+        # value was identical for a DNSSEC-anchored agent and an unverified one.
+        # "status": "active" is a liveness claim derived from nothing.
+        metadata={},
     )
 
 
+def _runtime_url(facts: SmAgentFacts) -> str:
+    """The address a caller should use, preferring the most specific declared.
+
+    `static[0] if static else ""` emitted a card with an empty `url` for an agent
+    that is reachable, just not statically — NANDA's `dynamic` and
+    `adaptive_resolver` are exactly that case, and both were dropped.
+    """
+    if facts.endpoints.static:
+        return facts.endpoints.static[0]
+    if facts.endpoints.dynamic:
+        return facts.endpoints.dynamic[0]
+    if facts.endpoints.adaptive_resolver is not None:
+        return facts.endpoints.adaptive_resolver.url
+    return ""
+
+
 def to_a2a_card(facts: SmAgentFacts, slug: str, domain: str, base_url: str) -> A2AAgentCard:
-    runtime = facts.endpoints.static[0] if facts.endpoints.static else ""
+    runtime = _runtime_url(facts)
     return A2AAgentCard(
         name=facts.agent_name,
         description=facts.description,
         url=runtime,
         version=facts.version,
-        capabilities={"streaming": facts.capabilities.streaming, "pushNotifications": False},
+        # Only capabilities the source declared. `"pushNotifications": False` was
+        # an invented negative claim: the source never said it lacked them.
+        capabilities={"streaming": facts.capabilities.streaming},
         authentication={"schemes": list(facts.capabilities.authentication.methods)},
         skills=[{"name": s.id, "description": s.description} for s in facts.skills],
         provider={"organization": facts.provider.name, "url": facts.provider.url},

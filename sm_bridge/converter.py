@@ -193,8 +193,17 @@ class SimpleAgentConverter:
 
     def to_sm(self, agent: SimpleAgent) -> SmAgentFacts:
         """Convert a SimpleAgent to NANDA AgentFacts format."""
-        # Build DID
+        # What the source said, versus what this bridge supplied. A mandatory
+        # frame fills fields the source does not have and drops fields it has no
+        # slot for; unrecorded, both are indistinguishable from source claims.
+        invented: list[str] = []
+        defaulted: list[str] = []
+        dropped: list[str] = []
+
+        # Build DID. The source supplied a bare id; the DID is built by munging
+        # the provider URL, so it is ours, not theirs.
         did = self._build_did(agent)
+        invented.append("id")
 
         # Build handle
         handle = SmAgentFacts.create_handle(
@@ -207,11 +216,16 @@ class SimpleAgentConverter:
             url=self.provider_url,
             did=f"did:{self.did_method}:{self.provider_url.replace('https://', '').replace('http://', '')}",
         )
+        invented.append("provider.did")
 
         # Build endpoints
         static_urls = list(agent.endpoints.values()) if agent.endpoints else []
         if self.base_url and not static_urls:
+            # The endpoint is the field corroboration compares. Synthesising one
+            # and serving it unmarked lets two registries agree on an address no
+            # source ever asserted.
             static_urls = [f"{self.base_url}/agents/{agent.id}"]
+            invented.append("endpoints.static")
         dynamic_urls = list(agent.dynamic_endpoints)
 
         # Build adaptive resolver if configured
@@ -274,10 +288,28 @@ class SimpleAgentConverter:
             batch=agent.batch,
         )
 
-        # Build detailed skills
+        # Build detailed skills. `SmSkill` reads seven keys; anything else the
+        # source sent has no slot in the frame and is recorded as dropped.
+        _SKILL_KEYS = {
+            "id",
+            "name",
+            "description",
+            "inputModes",
+            "outputModes",
+            "supportedLanguages",
+            "latencyBudgetMs",
+            "maxTokens",
+        }
         skills = []
-        for skill_data in agent.skills:
+        for idx, skill_data in enumerate(agent.skills):
             if isinstance(skill_data, dict):
+                if "description" not in skill_data:
+                    defaulted.append(f"skills[{idx}].description")
+                if "id" not in skill_data and "name" not in skill_data:
+                    defaulted.append(f"skills[{idx}].id")
+                dropped.extend(
+                    f"skills[{idx}].{k}" for k in sorted(set(skill_data) - _SKILL_KEYS)
+                )
                 skills.append(
                     SmSkill(
                         id=str(skill_data.get("id", skill_data.get("name", "unknown"))),
@@ -296,9 +328,8 @@ class SimpleAgentConverter:
         # represented without one. The placeholder stays, but it is recorded in
         # `synthesized` below so a consumer can tell it apart from a skill the
         # source actually declared.
-        synthesized: list[str] = []
         if not skills:
-            synthesized.append("skills")
+            invented.append("skills")
             skills.append(
                 SmSkill(
                     id=f"urn:{self.registry_id}:agent",
@@ -335,6 +366,14 @@ class SimpleAgentConverter:
                 sampling=agent.telemetry_sampling,
             )
 
+        # NANDA requires `label`. With no labels the namespace is repurposed as
+        # one, which is a category claim the source did not make.
+        if agent.labels:
+            label = agent.labels[0]
+        else:
+            label = agent.namespace
+            defaulted.append("label")
+
         # Build metadata with registry extensions
         metadata = {
             f"x_{self.registry_id.replace('-', '_')}": {
@@ -347,7 +386,14 @@ class SimpleAgentConverter:
                 **agent.metadata,
                 # After the spread on purpose: this is the bridge's statement
                 # about its own output, and a source must not be able to hide it.
-                "synthesized": synthesized,
+                "provenance": {
+                    "invented": invented,
+                    "defaulted": defaulted,
+                    "dropped": dropped,
+                },
+                # Deprecated alias for provenance.invented, kept one release for
+                # anyone who adopted it in 0.7.0. Removed in 0.9.0.
+                "synthesized": [f for f in invented if f == "skills"],
             }
         }
 
@@ -357,7 +403,7 @@ class SimpleAgentConverter:
             id=did,
             handle=handle,
             agent_name=agent.name,
-            label=agent.labels[0] if agent.labels else agent.namespace,
+            label=label,
             description=agent.description,
             version=agent.version,
             provider=provider,
