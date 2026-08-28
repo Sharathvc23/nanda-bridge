@@ -2,6 +2,46 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **A converted record now says what the source supplied and what this bridge
+  did.** `to_sm` declares a total conversion, and it is lossy in both directions:
+  a mandatory frame fills fields the source does not have, and drops fields it
+  has no slot for. Neither was visible in the output, so a consumer could not
+  tell a synthesised endpoint from a declared one.
+
+  The extension block gains `provenance`, with three lists:
+
+  - `invented` — `id` and `provider.did` (both munged from the provider URL),
+    `endpoints.static` when the source declared none, `skills` when it declared
+    none
+  - `defaulted` — `label` when taken from the namespace, `skills[n].description`
+    and `skills[n].id` when absent
+  - `dropped` — skill keys the frame has no slot for
+
+  `endpoints.static` matters most: it is the field corroboration compares.
+  Synthesising an endpoint and serving it unmarked lets two registries agree on
+  an address no source ever asserted — and self-corroboration cannot catch that,
+  because two instances of one converter invent identically. The converter has to
+  declare it because nothing downstream can infer it.
+
+  Written after the source's own `metadata` is merged, so a source cannot rewrite
+  the record of what we did.
+
+- **`synthesized` is deprecated** in favour of `provenance.invented`. It shipped
+  in 0.7.0 and is kept as an alias for one release; removed in 0.9.0.
+
+- **The gateway stops inventing.** An A2A card for an agent reachable only via
+  `dynamic` or `adaptive_resolver` had `url: ""`; it now falls back through both.
+  `"pushNotifications": False` is gone — the source never said it lacked them.
+  Catalog entries no longer carry `ttl_seconds: 3600` or `status: "active"`: a
+  hardcoded TTL is a caching contract nothing honors, and the status was derived
+  from nothing.
+
+  **Still invented, and not fixed here:** `CatalogEntry.updatedAt` is the moment
+  of serialization, not of modification. Fixing it needs a real modification time
+  threaded in, which changes the signature.
+
 ### Added
 
 - **This bridge is now swept by the corroboration stack in CI**
