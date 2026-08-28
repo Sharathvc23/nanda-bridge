@@ -80,6 +80,10 @@ dev = [
     "ruff==0.15.13",
     "mypy>=1.0.0",
     "hypothesis>=6.100.0",
+    # The auditor stack, test-only. sm-bridge is a registry: a thing the Quilt
+    # audits, not a consumer of it. Depending on it at runtime would invert that.
+    # tests/test_corroborates_itself.py sweeps this bridge with it.
+    "sm-divergence[attestation]>=0.9",
 ]
 
 [project.scripts]

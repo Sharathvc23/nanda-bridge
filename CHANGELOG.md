@@ -1,5 +1,29 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **This bridge is now swept by the corroboration stack in CI**
+  (`tests/test_corroborates_itself.py`). Two instances serving the same agents
+  must corroborate to `AGREE`; a divergence means this registry is
+  misrepresenting its own data.
+
+  Every fault fixed in 0.7.0 was this registry doing something the Quilt exists
+  to detect — answering for an identifier scoped elsewhere, dropping fields from
+  a peer's record, emitting claims the source never made. Pointing the auditor at
+  ourselves turns that from a coincidence into a regression net.
+
+  Verified by reverting each fix: the registry-scope check and the 400-not-404
+  decision are both caught. `extra="allow"` is **not** — two instances of the
+  same code truncate identically and agree. That boundary is pinned by
+  `test_identical_invention_is_invisible_to_self_corroboration`, so the file is
+  not read as stronger than it is.
+
+  `sm-divergence` is a **dev** dependency. Nothing in `sm_bridge` imports it: this
+  package is a registry, a thing the stack audits, and depending on it at runtime
+  would invert that.
+
 ## [0.7.0] — 2026-08-27
 
 Four fixes, all of the same shape: this bridge asserted things the source never
