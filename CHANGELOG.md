@@ -1,6 +1,32 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.0] — 2026-08-27
+
+### Changed — BREAKING
+
+- **The delta log is append-only. Nothing an agent does is deleted.**
+  `DeltaStore` pruned to `max_deltas=10000`, dropping the OLDEST deltas, while
+  `current_facts` rebuilt the catalog by replaying from zero. An agent whose only
+  `upsert` had aged out disappeared from the catalog — no error, no gap, and no
+  way to tell it had ever been there.
+
+  An agent's history is evidence. A registry that silently forgets what it served
+  cannot be audited for what it served, which is the whole property this package
+  is meant to support.
+
+  `max_deltas` is deprecated. Passing it raises a `DeprecationWarning` and has no
+  effect; accepting the argument and silently ignoring it would be its own lie.
+
+- **`DeltaStore.snapshot()`** returns the most recent delta per agent, in
+  sequence order, and `current_facts` uses it instead of replaying the log. A
+  complete log must not make the read path grow with history. `delete` and
+  `revoke` are kept in the snapshot — a removal is a fact about the agent, not
+  the absence of one, and dropping it would resurrect the agent on the next
+  rebuild.
+
+  A subclass that persists deltas MUST override `snapshot()`; the default reads
+  the in-memory index.
+
 
 ### Changed
 

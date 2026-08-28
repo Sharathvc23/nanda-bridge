@@ -10,6 +10,7 @@ For production use, extend this class to persist deltas to a database.
 from __future__ import annotations
 
 import threading
+import warnings
 from datetime import datetime, timezone
 from typing import Protocol
 
@@ -25,6 +26,10 @@ class DeltaStoreProtocol(Protocol):
 
     def since(self, seq: int) -> list[SmAgentFactsDelta]:
         """Get all deltas since a sequence number."""
+        ...
+
+    def snapshot(self) -> list[SmAgentFactsDelta]:
+        """The most recent delta for each agent, in sequence order."""
         ...
 
     @property
@@ -52,16 +57,30 @@ class DeltaStore:
         next_seq = store.next_seq
     """
 
-    def __init__(self, max_deltas: int = 10000):
+    def __init__(self, max_deltas: int | None = None):
         """Initialize the delta store.
 
         Args:
-            max_deltas: Maximum number of deltas to retain (oldest are pruned)
+            max_deltas: Deprecated and ignored. The log is append-only.
         """
+        if max_deltas is not None:
+            warnings.warn(
+                "max_deltas is ignored: the delta log is append-only. Pruning "
+                "dropped the OLDEST deltas while the catalog was rebuilt by "
+                "replaying from zero, so an agent whose only upsert had aged out "
+                "vanished with no error. An agent's history is evidence, and a "
+                "registry that silently forgets what it served cannot be audited "
+                "for what it served.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self._lock = threading.Lock()
         self._seq = 0
         self._deltas: list[SmAgentFactsDelta] = []
-        self._max_deltas = max_deltas
+        # The most recent delta per agent id, so rebuilding current state costs
+        # one entry per agent rather than a replay of the whole log. A complete
+        # log must not make the read path grow without bound.
+        self._latest: dict[str, SmAgentFactsDelta] = {}
 
     def add(self, action: str, agent: SmAgentFacts) -> SmAgentFactsDelta:
         """Record a new delta.
@@ -83,11 +102,7 @@ class DeltaStore:
                 signature=None,
             )
             self._deltas.append(delta)
-
-            # Prune old deltas if needed
-            if len(self._deltas) > self._max_deltas:
-                self._deltas = self._deltas[-self._max_deltas :]
-
+            self._latest[agent.id] = delta
             return delta
 
     def since(self, seq: int) -> list[SmAgentFactsDelta]:
@@ -101,6 +116,23 @@ class DeltaStore:
         """
         with self._lock:
             return [d for d in self._deltas if d.seq > seq]
+
+    def snapshot(self) -> list[SmAgentFactsDelta]:
+        """The most recent delta for each agent, in sequence order.
+
+        A `delete` or `revoke` is kept: a removal is a fact about the agent, not
+        the absence of one, and dropping it would resurrect the agent on the next
+        rebuild.
+
+        Equivalent to replaying `since(0)`, and `current_facts` is tested against
+        that equivalence — this is an optimisation, not a different answer.
+
+        A subclass that persists deltas MUST override this; the default reads the
+        in-memory index and would be wrong for a store whose history lives
+        elsewhere.
+        """
+        with self._lock:
+            return sorted(self._latest.values(), key=lambda d: d.seq)
 
     def get(self, seq: int) -> SmAgentFactsDelta | None:
         """Get a specific delta by sequence number.
@@ -134,6 +166,7 @@ class DeltaStore:
         with self._lock:
             self._seq = 0
             self._deltas = []
+            self._latest = {}
 
     def __len__(self) -> int:
         """Return the number of stored deltas."""

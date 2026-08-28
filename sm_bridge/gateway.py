@@ -88,12 +88,14 @@ def default_slug(facts: SmAgentFacts) -> str:
 def current_facts(
     delta_store: DeltaStore, slug_of: Callable[[SmAgentFacts], str]
 ) -> dict[str, SmAgentFacts]:
-    """Replay the delta log into the current agent set (upsert adds, delete/revoke removes).
+    """The current agent set (upsert adds, delete/revoke removes).
 
-    The catalog reflects the store's current state, so it stays current as deltas arrive.
+    Built from the store's per-agent snapshot rather than a replay of the whole
+    log, so it costs one entry per agent and does not grow with history. The log
+    is append-only (`DeltaStore`), and a full replay would grow without bound.
     """
     state: dict[str, SmAgentFacts] = {}
-    for delta in delta_store.since(0):
+    for delta in delta_store.snapshot():
         slug = slug_of(delta.agent)
         if delta.action == "upsert":
             state[slug] = delta.agent
