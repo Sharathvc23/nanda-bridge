@@ -1,6 +1,13 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.0] — 2026-08-27
+
+Four fixes, all of the same shape: this bridge asserted things the source never
+said. Three are breaking. **Upgrade is recommended for every deployment** — one
+of these is a security fix.
+
+Read the entries below before upgrading; two of them change what your registry
+emits, and one changes which requests it answers.
 
 ### Fixed — claims the source never made
 
