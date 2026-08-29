@@ -15,6 +15,19 @@ bridge is how you get onto it.
 The core is just FastAPI + Pydantic. Verification and transparency-log features live in
 optional extras, so you only pull cryptography when you use it.
 
+> **Upgrade from 0.6.0 or earlier.** `0.7.0` fixes a flaw in `/nanda/resolve`:
+> an identifier scoped to a *different* registry (`@other-registry:ns/foo`, or a
+> `did:web` under another host) was reduced to a bare id and answered locally,
+> carrying this registry's proof block, with nothing to tell the caller the scope
+> had been ignored. Such an identifier is now rejected with `400`.
+>
+> `0.7.0` and `0.8.0` also change behaviour deliberately: no certification block
+> is emitted unless the source declared one, `conformance_level` is computed
+> rather than asserted, `ns:agent` is no longer split to `agent`, and the delta
+> log is append-only. See [CHANGELOG.md](CHANGELOG.md) before upgrading.
+
+Requires Python 3.11 or later. MIT licensed.
+
 ## What it does
 
 - **Onboard** any source to the quilt. A registry-scale source (like ANS, with its own
@@ -216,6 +229,20 @@ Part of the `sm-*` trust stack:
 | `sm-bridge` (this package) | Onboard any agent source to the NANDA Index, with a normalized verifiable proof of trust |
 | [`sm-arp`](https://github.com/Sharathvc23/sm-arp) | Agency Receipt Protocol — signed receipts for what an agent did |
 | [`sm-conformance`](https://github.com/Sharathvc23/sm-conformance) | Signed, offline-verifiable conformance badges |
+
+## Auditing this registry
+
+This package **serves** records, which makes it a thing the corroboration stack
+audits rather than a consumer of it. Two instances serving the same agents are
+swept by [`sm-divergence`](https://pypi.org/project/sm-divergence/) in CI and
+must corroborate to `AGREE`; a divergence means this registry is misrepresenting
+its own data.
+
+That check has a limit, and it is pinned as a test rather than left implied: two
+instances of the same code misbehaving identically agree with each other. So the
+converter also records what it supplied that the source did not — `provenance`,
+carrying `invented`, `defaulted` and `dropped` — because nothing downstream can
+infer it. See [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## License
 
